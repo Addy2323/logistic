@@ -1,0 +1,13 @@
+﻿Testing Beem Africa API...
+Sender ID: Rodway Shop
+HTTP Status: 200
+Response Body:
+{
+  "successful": true,
+  "request_id": 50478053,
+  "code": 100,
+  "message": "Message Submitted Successfully",
+  "valid": 1,
+  "invalid": 0,
+  "duplicates": 0
+}

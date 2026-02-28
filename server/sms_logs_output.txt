@@ -1,0 +1,45 @@
+﻿Last 50 SMS Logs:
+ID: f3db2f00-c46f-49e0-b354-3198d6a9a9d4
+Phone: 255765432101
+Status: SENT
+Error: null
+Message: New Order Assigned
+Order ID: ORD-1768146119496-5E25
+Pickup: Mollitia optio enim
+Delivery: Libero aut nihil con
+Please login to MHEMA Express.
+Date: Sun Jan 11 2026 18:42:01 GMT+0300 (East Africa Time)
+---
+ID: 135c27cd-e891-49e2-b6b6-4073d389f193
+Phone: 255723456701
+Status: SENT
+Error: null
+Message: New Order Assigned
+Order ID: ORD-1768145058525-6623
+Pickup: Id similique quaerat
+Delivery: Beatae sed commodi v
+Please login to MHEMA Express.
+Date: Sun Jan 11 2026 18:24:20 GMT+0300 (East Africa Time)
+---
+ID: 530abbd7-457f-4505-aab1-ddd035bc8f36
+Phone: 255712345601
+Status: SENT
+Error: null
+Message: New Order Assigned
+Order ID: ORD-1768144480476-DCAF
+Pickup: Est dolor accusantiu
+Delivery: Magni facilis quo qu
+Please login to MHEMA Express.
+Date: Sun Jan 11 2026 18:14:42 GMT+0300 (East Africa Time)
+---
+ID: a0936fba-b6d9-43fe-8707-90ca94a9b779
+Phone: 255765432101
+Status: SENT
+Error: null
+Message: New Order Assigned
+Order ID: ORD-1768144279307-DBEE
+Pickup: Ratione elit et lab
+Delivery: Exercitationem ut fu
+Please login to MHEMA Express.
+Date: Sun Jan 11 2026 18:11:21 GMT+0300 (East Africa Time)
+---

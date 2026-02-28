@@ -1,0 +1,349 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  AGENT
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum AgentAvailability {
+  ONLINE
+  OFFLINE
+}
+
+enum OrderStatus {
+  PLACED
+  QUEUED
+  ASSIGNED
+  PICKED
+  IN_TRANSIT
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
+enum OrderType {
+  TYPE_A  // Customer already paid supplier - logistics only
+  TYPE_B  // Customer knows price but hasn't paid
+  TYPE_C  // Customer doesn't know price - MHEMA sources
+}
+
+enum PaymentProvider {
+  M_PESA
+  TIGO_PESA
+  SELCOM
+  RIPA
+}
+
+enum NotificationType {
+  ORDER_ASSIGNED
+  PAYMENT_CONFIRMED
+  STATUS_UPDATE
+  ADMIN_ALERT
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  fullName  String     @map("full_name")
+  phone     String?
+  avatarUrl String?    @map("avatar_url")
+  role      UserRole   @default(CUSTOMER)
+
+  status    UserStatus @default(ACTIVE)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  // OTP Verification
+  otpCode         String?   @map("otp_code")
+  otpExpiresAt    DateTime? @map("otp_expires_at")
+  isPhoneVerified Boolean   @default(false) @map("is_phone_verified")
+
+  // Relations
+  agent             Agent?
+  ordersAsCustomer  Order[]        @relation("CustomerOrders")
+  paymentQRUploads  PaymentQRCode[]
+  notifications     Notification[]
+  paymentConfirmations Order[]     @relation("PaymentConfirmedBy")
+  chatParticipations   ChatParticipant[]
+  sentMessages         ChatMessage[]
+
+  @@map("users")
+}
+
+model Agent {
+  id                   String            @id @default(uuid())
+  userId               String            @unique @map("user_id")
+  availabilityStatus   AgentAvailability @default(OFFLINE) @map("availability_status")
+  currentOrderCount    Int               @default(0) @map("current_order_count")
+  maxOrderCapacity     Int               @default(10) @map("max_order_capacity")
+  commissionRate       Decimal           @default(10.00) @map("commission_rate") @db.Decimal(5, 2)
+  totalEarnings        Decimal           @default(0.00) @map("total_earnings") @db.Decimal(10, 2)
+  rating               Decimal           @default(0.00) @db.Decimal(3, 2)
+  totalDeliveries      Int               @default(0) @map("total_deliveries")
+  lastOnlineAt         DateTime?         @map("last_online_at")
+  createdAt            DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders       Order[]
+  salesRecords SalesRecord[]
+
+  @@index([availabilityStatus])
+  @@map("agents")
+}
+
+model TransportMethod {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  basePrice   Decimal  @map("base_price") @db.Decimal(10, 2)
+  pricePerKm  Decimal? @map("price_per_km") @db.Decimal(8, 2)
+  pricePerKg  Decimal? @map("price_per_kg") @db.Decimal(8, 2)
+  isActive    Boolean  @default(true) @map("is_active")
+  icon        String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  orders Order[]
+
+  @@index([isActive])
+  @@map("transport_methods")
+}
+
+model Order {
+  id                  String        @id @default(uuid())
+  customerId          String        @map("customer_id")
+  agentId             String?       @map("agent_id")
+  orderNumber         String        @unique @map("order_number")
+  status              OrderStatus   @default(PLACED)
+  orderType           OrderType     @default(TYPE_A) @map("order_type")
+  
+  // Location details
+  pickupAddress       String        @map("pickup_address")
+  pickupLat           Decimal?      @map("pickup_lat") @db.Decimal(10, 8)
+  pickupLng           Decimal?      @map("pickup_lng") @db.Decimal(11, 8)
+  deliveryAddress     String        @map("delivery_address")
+  deliveryLat         Decimal?      @map("delivery_lat") @db.Decimal(10, 8)
+  deliveryLng         Decimal?      @map("delivery_lng") @db.Decimal(11, 8)
+  
+  // Order details
+  transportMethodId   String?       @map("transport_method_id")
+  description         String?
+  packageWeight       Decimal?      @map("package_weight") @db.Decimal(8, 2)
+  estimatedCost       Decimal?      @map("estimated_cost") @db.Decimal(10, 2)
+  actualCost          Decimal?      @map("actual_cost") @db.Decimal(10, 2)
+  productImageUrls     String[]      @default([]) @map("product_image_urls")
+  isVerified          Boolean       @default(false) @map("is_verified")
+  
+  // Pricing breakdown (per MHEMA pricing model)
+  productPrice        Decimal?      @map("product_price") @db.Decimal(10, 2)     // Required for Type B & C
+  agentMargin         Decimal?      @map("agent_margin") @db.Decimal(10, 2)      // Required for Type C only
+  pickupFee           Decimal?      @map("pickup_fee") @db.Decimal(10, 2)        // Set during verification
+  packingFee          Decimal?      @map("packing_fee") @db.Decimal(10, 2)       // Set during verification
+  transportFee        Decimal?      @map("transport_fee") @db.Decimal(10, 2)     // Set during verification
+  totalAmount         Decimal?      @map("total_amount") @db.Decimal(10, 2)      // Auto-calculated
+  
+  // Payment
+  paymentStatus       PaymentStatus @default(PENDING) @map("payment_status")
+  paymentMethod       String?       @map("payment_method")
+  paymentConfirmedAt  DateTime?     @map("payment_confirmed_at")
+  paymentConfirmedBy  String?       @map("payment_confirmed_by")
+  snippeReference     String?       @map("snippe_reference")
+  ghalaOrderId        String?       @unique @map("ghala_order_id")
+  
+  // Timestamps
+  placedAt            DateTime      @default(now()) @map("placed_at")
+  assignedAt          DateTime?     @map("assigned_at")
+  pickedAt            DateTime?     @map("picked_at")
+  deliveredAt         DateTime?     @map("delivered_at")
+  completedAt         DateTime?     @map("completed_at")
+
+  // Relations
+  customer            User               @relation("CustomerOrders", fields: [customerId], references: [id])
+  agent               Agent?             @relation(fields: [agentId], references: [id])
+  transportMethod     TransportMethod?   @relation(fields: [transportMethodId], references: [id])
+  paymentConfirmer    User?              @relation("PaymentConfirmedBy", fields: [paymentConfirmedBy], references: [id])
+  orderQueue          OrderQueue?
+  salesRecord         SalesRecord?
+  notifications       Notification[]
+  chatRooms           ChatRoom[]
+
+  @@index([customerId])
+  @@index([agentId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([placedAt])
+  @@map("orders")
+}
+
+model OrderQueue {
+  id          String    @id @default(uuid())
+  orderId     String    @unique @map("order_id")
+  priority    Int       @default(0)
+  queuedAt    DateTime  @default(now()) @map("queued_at")
+  processedAt DateTime? @map("processed_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([priority, queuedAt])
+  @@index([processedAt])
+  @@map("order_queue")
+}
+
+model PaymentQRCode {
+  id           String          @id @default(uuid())
+  provider     PaymentProvider
+  accountName  String          @map("account_name")
+  lipaNumber   String?         @map("lipa_number")
+  qrCodeUrl    String          @map("qr_code_url")
+  isActive     Boolean         @default(true) @map("is_active")
+  uploadedBy   String          @map("uploaded_by")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  uploader User @relation(fields: [uploadedBy], references: [id])
+
+  @@index([provider])
+  @@index([isActive])
+  @@map("payment_qr_codes")
+}
+
+model Notification {
+  id             String           @id @default(uuid())
+  userId         String           @map("user_id")
+  type           NotificationType
+  title          String
+  message        String
+  relatedOrderId String?          @map("related_order_id")
+  isRead         Boolean          @default(false) @map("is_read")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  relatedOrder Order? @relation(fields: [relatedOrderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model SalesRecord {
+  id              String   @id @default(uuid())
+  orderId         String   @unique @map("order_id")
+  agentId         String   @map("agent_id")
+  amount          Decimal  @db.Decimal(10, 2)
+  agentCommission Decimal  @map("agent_commission") @db.Decimal(10, 2)
+  profit          Decimal  @db.Decimal(10, 2)
+  recordedAt      DateTime @default(now()) @map("recorded_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id])
+  agent Agent @relation(fields: [agentId], references: [id])
+
+  @@index([agentId])
+  @@index([recordedAt])
+  @@map("sales_records")
+}
+
+enum ChatType {
+  ORDER
+  DIRECT
+  SUPPORT
+}
+
+model ChatRoom {
+  id        String   @id @default(uuid())
+  type      ChatType @default(ORDER)
+  orderId   String?  @map("order_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  order        Order?            @relation(fields: [orderId], references: [id])
+  participants ChatParticipant[]
+  messages     ChatMessage[]
+
+  @@index([orderId])
+  @@map("chat_rooms")
+}
+
+model ChatParticipant {
+  id          String   @id @default(uuid())
+  chatId      String   @map("chat_id")
+  userId      String   @map("user_id")
+  unreadCount Int      @default(0) @map("unread_count")
+  joinedAt    DateTime @default(now()) @map("joined_at")
+  lastReadAt  DateTime @default(now()) @map("last_read_at")
+
+  // Relations
+  chat ChatRoom @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, userId])
+  @@map("chat_participants")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  chatId    String   @map("chat_id")
+  senderId  String   @map("sender_id")
+  content   String
+  imageUrl  String?  @map("image_url")
+  isSystem  Boolean  @default(false) @map("is_system")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  chat   ChatRoom @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, createdAt])
+  @@map("chat_messages")
+}
+
+model SystemSettings {
+  id              String   @id @default("default")
+  lastAssignedAgentId String? @map("last_assigned_agent_id")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+model SmsLog {
+  id        String   @id @default(uuid())
+  phone     String
+  message   String
+  status    String   // SENT, FAILED, PENDING, DISABLED
+  provider  String   @default("beem")
+  error     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([phone])
+  @@index([status])
+  @@index([createdAt])
+  @@map("sms_logs")
+}

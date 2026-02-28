@@ -1,0 +1,17 @@
+﻿Found 4 logs.
+[Sun Jan 11 2026 18:42:01 GMT+0300 (East Africa Time)] 255765432101: SENT - Error: null
+Message: New Order Assigned
+Order ID: ORD-1768146119496-5E2...
+---
+[Sun Jan 11 2026 18:24:20 GMT+0300 (East Africa Time)] 255723456701: SENT - Error: null
+Message: New Order Assigned
+Order ID: ORD-1768145058525-662...
+---
+[Sun Jan 11 2026 18:14:42 GMT+0300 (East Africa Time)] 255712345601: SENT - Error: null
+Message: New Order Assigned
+Order ID: ORD-1768144480476-DCA...
+---
+[Sun Jan 11 2026 18:11:21 GMT+0300 (East Africa Time)] 255765432101: SENT - Error: null
+Message: New Order Assigned
+Order ID: ORD-1768144279307-DBE...
+---

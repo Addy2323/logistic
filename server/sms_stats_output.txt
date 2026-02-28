@@ -1,0 +1,12 @@
+﻿SMS Log Stats:
+[
+  {
+    "_count": {
+      "status": 4
+    },
+    "status": "SENT"
+  }
+]
+
+Latest Failed Logs:
+[]

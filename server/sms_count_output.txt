@@ -1,0 +1,11 @@
+﻿Total SMS Logs: 5
+Latest Log:
+{
+  "id": "94d9915d-5af3-432f-b688-133ca76a2ff1",
+  "phone": "255768828247",
+  "message": "MHEMA Logistics Test Message. Please confirm if received.",
+  "status": "SENT",
+  "provider": "beem",
+  "error": null,
+  "createdAt": "2026-01-11T16:10:47.978Z"
+}

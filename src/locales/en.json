@@ -1,0 +1,442 @@
+{
+    "nav": {
+        "services": "Services",
+        "howItWorks": "How It Works",
+        "whyUs": "Why Us",
+        "contact": "Contact",
+        "getStarted": "Get Started",
+        "dashboard": "Dashboard",
+        "login": "Login"
+    },
+    "hero": {
+        "badge": "Trusted by 5,000+ Businesses",
+        "title": "Shop from Kariakoo,",
+        "subtitle": "We Deliver Anywhere",
+        "typingText": "Safe & Secure | Zero Scams | Fast Delivery | Verified Products",
+        "description": "The most reliable way to shop from Kariakoo. We verify, pack, and ship your goods directly to your doorstep anywhere in Tanzania.",
+        "getStarted": "Get Started",
+        "learnMore": "Learn More",
+        "badges": {
+            "quality": "Quality Verified",
+            "express": "Express Delivery",
+            "secure": "Secure Payment"
+        },
+        "floating": {
+            "title": "Express Delivery",
+            "subtitle": "To your doorstep"
+        },
+        "stats": {
+            "value": "10k+",
+            "label": "Successful Deliveries"
+        }
+    },
+    "howItWorks": {
+        "badge": "How It Works",
+        "title": "Simple Process,",
+        "titleGradient": "Reliable Results",
+        "description": "From order to delivery, we make Kariakoo shopping effortless with our verified process.",
+        "steps": {
+            "submit": {
+                "title": "Submit Your Order",
+                "description": "Tell us what you need or share a photo of the product you want."
+            },
+            "verify": {
+                "title": "We Verify Quality",
+                "description": "Our agent physically checks the product and sends you proof."
+            },
+            "approve": {
+                "title": "Approve & Pay",
+                "description": "Once satisfied, make a secure payment through our platform."
+            },
+            "delivery": {
+                "title": "Fast Delivery",
+                "description": "We pack and ship your order to your doorstep quickly and safely."
+            }
+        }
+    },
+    "services": {
+        "badge": "Our Services",
+        "title": "Comprehensive",
+        "titleGradient": "Logistics Solutions",
+        "description": "We handle everything from sourcing to delivery, ensuring a seamless shopping experience from Kariakoo.",
+        "learnMore": "Learn More",
+        "items": {
+            "collection": {
+                "title": "Product Collection",
+                "description": "We collect items from verified Kariakoo shops on your behalf."
+            },
+            "verification": {
+                "title": "Quality Verification",
+                "description": "Our agents inspect and verify product quality physically before purchase."
+            },
+            "consolidation": {
+                "title": "Consolidation & Packing",
+                "description": "We combine multiple orders and pack them securely for efficient shipping."
+            },
+            "express": {
+                "title": "Express Delivery",
+                "description": "Fast and reliable delivery to any location across Tanzania."
+            },
+            "wholesaler": {
+                "title": "Wholesale Services",
+                "description": "Special rates and dedicated support for bulk orders and wholesalers."
+            },
+            "logistics": {
+                "title": "Full Logistics Support",
+                "description": "End-to-end logistics management from Kariakoo to your doorstep."
+            }
+        }
+    },
+    "whyUs": {
+        "badge": "Why Choose Us",
+        "title": "The MHEMA",
+        "titleGradient": "Advantage",
+        "description": "We are redefining Kariakoo logistics with transparency, speed, and a zero-scam guarantee.",
+        "stats": {
+            "accuracy": "Verification Accuracy",
+            "verification": "Avg. Verification Time",
+            "scams": "Reported Scams"
+        },
+        "items": {
+            "time": {
+                "title": "Save Time",
+                "description": "No need to travel to Dar. We do the legwork for you."
+            },
+            "assurance": {
+                "title": "Full Assurance",
+                "description": "We only pay sellers after verifying the product."
+            },
+            "quality": {
+                "title": "Quality First",
+                "description": "Physical inspection of every item before shipping."
+            },
+            "value": {
+                "title": "Best Value",
+                "description": "Get wholesale Kariakoo prices directly."
+            },
+            "professional": {
+                "title": "Professional Team",
+                "description": "Experienced agents who know Kariakoo inside out."
+            },
+            "partner": {
+                "title": "Your Partner",
+                "description": "We grow with your business, handling all logistics."
+            }
+        }
+    },
+    "contact": {
+        "badge": "Contact Us",
+        "title": "Let Us Know",
+        "titleGradient": "Your Feedback",
+        "description": "Have questions or need help with an order? Our team is ready to assist you.",
+        "items": {
+            "phone": {
+                "label": "Call or WhatsApp"
+            },
+            "location": {
+                "label": "Our Office",
+                "address": "Kariakoo, Dar es Salaam",
+                "welcome": "Always welcome"
+            },
+            "hours": {
+                "label": "Working Hours",
+                "value": "Mon - Sat: 8:00 AM - 6:00 PM"
+            }
+        },
+        "cta": {
+            "title": "Ready to Get Started?",
+            "description": "Join thousands of businesses shopping from Kariakoo securely.",
+            "login": "Login to Account",
+            "register": "Register Now",
+            "help": "Need urgent help?",
+            "chat": "Chat on WhatsApp"
+        },
+        "alerts": {
+            "whatsapp": {
+                "title": "Open WhatsApp?",
+                "text": "You will be redirected to WhatsApp to chat with our team.",
+                "confirm": "Yes, open WhatsApp",
+                "cancel": "Cancel"
+            },
+            "call": {
+                "title": "Call Us?",
+                "text": "Would you like to call our customer support team?",
+                "confirm": "Yes, call now",
+                "cancel": "Cancel"
+            }
+        }
+    },
+    "auth": {
+        "branding": {
+            "title": "Your Trusted",
+            "titleSuffix": "Kariakoo Connection",
+            "desc": "Track your orders, verify quality, and manage deliveries all in one place.",
+            "features": [
+                "Real-time order tracking",
+                "Quality verification photos",
+                "Secure payment handling"
+            ]
+        },
+        "backToHome": "Back to home",
+        "welcomeBack": "Welcome back",
+        "createAccount": "Create an account",
+        "loginDesc": "Enter your credentials to access your account",
+        "registerDesc": "Get started with MHEMA EXPRESS today",
+        "fullName": "Full Name",
+        "fullNamePlaceholder": "John Doe",
+        "email": "Email Address",
+        "emailPlaceholder": "you@example.com",
+        "password": "Password",
+        "signIn": "Sign In",
+        "signUp": "Sign Up",
+        "pleaseWait": "Please wait...",
+        "noAccount": "Don't have an account?",
+        "haveAccount": "Already have an account?",
+        "demo": {
+            "title": "Demo Credentials:",
+            "admin": "Admin",
+            "customer": "Customer",
+            "agent": "Agent"
+        },
+        "toasts": {
+            "welcome": "Welcome back!",
+            "loginSuccess": "Login successful",
+            "loginFailed": "Login failed",
+            "accountCreated": "Account created!",
+            "welcomeMhema": "Welcome to MHEMA EXPRESS",
+            "regFailed": "Registration failed",
+            "nameRequired": "Name required",
+            "nameRequiredDesc": "Please enter your full name"
+        }
+    },
+    "dashboard": {
+        "sidebar": {
+            "overview": "Overview",
+            "orders": "Orders",
+            "customers": "Customers",
+            "agents": "Agents",
+            "payments": "Payments",
+            "transport": "Transport",
+            "profile": "Profile",
+            "settings": "Settings",
+            "logout": "Logout",
+            "admin": "Admin",
+            "agent": "Agent",
+            "customer": "Customer",
+            "title": "Logistics Co. Ltd"
+        },
+        "overview": {
+            "welcome": "Welcome back,",
+            "adminDescription": "Here's an overview of your logistics operations.",
+            "agentDescription": "Here are your assigned tasks for today.",
+            "customerDescription": "Track your orders and manage deliveries.",
+            "stats": {
+                "totalOrders": "Total Orders",
+                "pendingOrders": "Pending Orders",
+                "myOrders": "My Orders",
+                "activeOrders": "Active Orders",
+                "completed": "Completed",
+                "totalSpent": "Total Spent",
+                "totalRevenue": "Total Revenue",
+                "earnings": "Earnings",
+                "activeAgents": "Active Agents",
+                "inProgress": "In Progress"
+            },
+            "quickActions": {
+                "title": "Quick Actions"
+            },
+            "actions": {
+                "newOrder": "Create New Order",
+                "newOrderDesc": "Ship a new package to customers",
+                "manageAgents": "Manage Agents",
+                "manageAgentsDesc": "View and manage delivery agents",
+                "viewOrders": "View All Orders",
+                "viewOrdersDesc": "See all orders and their status",
+                "myOrders": "My Assigned Orders",
+                "myOrdersDesc": "View orders assigned to you"
+            }
+        },
+        "orders": {
+            "title": "Orders",
+            "adminDesc": "Manage all customer orders",
+            "customerDesc": "View and track your orders",
+            "newOrder": "New Order",
+            "searchPlaceholder": "Search orders...",
+            "filterPlaceholder": "Filter by status",
+            "statusAll": "All Status",
+            "statusPending": "Pending",
+            "statusVerified": "Verified",
+            "statusApproved": "Approved",
+            "statusCollecting": "Collecting",
+            "statusPacking": "Packing",
+            "statusDispatched": "Dispatched",
+            "statusDelivered": "Delivered",
+            "table": {
+                "id": "Order ID",
+                "customer": "Customer",
+                "product": "Product",
+                "status": "Status",
+                "amount": "Amount",
+                "date": "Date",
+                "actions": "Actions"
+            },
+            "noOrders": "No orders found",
+            "modals": {
+                "new": {
+                    "title": "Create New Order",
+                    "desc": "Provide details about the product you want to ship.",
+                    "productDetails": "Product Details",
+                    "productDetailsPlaceholder": "e.g. Cotton fabric - Blue, 50 meters",
+                    "shopName": "Shop Name (Optional)",
+                    "shopNamePlaceholder": "e.g. Kariakoo Textiles",
+                    "quantity": "Quantity",
+                    "deliveryMethod": "Delivery Method",
+                    "deliveryMethodPlaceholder": "Select method",
+                    "deliveryStandard": "Standard Shipping (10-14 days)",
+                    "deliveryExpress": "Express Shipping (5-7 days)",
+                    "deliveryCargo": "Cargo Shipping (3-5 days)",
+                    "consolidate": "Consolidate with other orders",
+                    "consolidateDesc": "We will collect all your orders and pack them together.",
+                    "productPhotos": "Product Photos (Optional)",
+                    "upload": "Upload",
+                    "uploadDesc": "Drag and drop or click to upload product images",
+                    "uploadLimit": "Upload up to 4 photos of the product you want us to find.",
+                    "deliveryLocation": "Delivery Location",
+                    "selected": "Selected",
+                    "cancel": "Cancel",
+                    "submit": "Submit Order"
+                },
+                "detail": {
+                    "title": "Order Details",
+                    "consolidated": "Consolidated",
+                    "payNow": "Pay Now",
+                    "updateStatus": "Update Status",
+                    "productDetails": "Product Details",
+                    "shop": "Shop",
+                    "notSpecified": "Not specified",
+                    "qty": "Qty",
+                    "estimated": "Estimated",
+                    "tbd": "TBD",
+                    "actual": "Actual",
+                    "pending": "Pending",
+                    "deliveryAddress": "Delivery Address",
+                    "delivery": "delivery",
+                    "assignedAgent": "Assigned Agent",
+                    "tracking": "Order Tracking",
+                    "updatedBy": "Updated by",
+                    "created": "Created"
+                },
+                "payment": {
+                    "title": "Complete Payment",
+                    "amount": "Amount to Pay",
+                    "pendingVerification": "Price Pending Verification",
+                    "method": "Select Payment Method",
+                    "phone": "Phone Number",
+                    "phonePlaceholder": "e.g. 0756 312 736",
+                    "submit": "Pay Now",
+                    "promptDesc": "A payment prompt will be sent to your phone."
+                },
+                "verify": {
+                    "title": "Verify Order",
+                    "actualPrice": "Actual Price (TZS)",
+                    "actualPricePlaceholder": "Enter final price from shop",
+                    "photos": "Verification Photos",
+                    "notes": "Notes for Customer",
+                    "notesPlaceholder": "e.g. Quality checked, color matches request.",
+                    "submit": "Complete Verification"
+                }
+            },
+            "toasts": {
+                "created": "Order created successfully!",
+                "verified": "Order verified successfully!",
+                "statusUpdated": "Order status updated to"
+            },
+            "alerts": {
+                "processing": "Processing Payment...",
+                "initiating": "Initiating {{method}} payment for {{id}}",
+                "success": "Payment Successful!",
+                "successDesc": "Your order is now being processed."
+            }
+        },
+        "customers": {
+            "title": "Customers",
+            "desc": "Manage and view your customer base",
+            "addCustomer": "Add Customer",
+            "searchPlaceholder": "Search customers by name, email or phone...",
+            "statusActive": "Active",
+            "statusInactive": "Inactive",
+            "actions": {
+                "viewProfile": "View Profile",
+                "editDetails": "Edit Details",
+                "deactivate": "Deactivate",
+                "delete": "Delete"
+            },
+            "joined": "Joined",
+            "orders": "Orders",
+            "viewOrders": "View Orders",
+            "noCustomers": "No customers found matching your search."
+        },
+        "agents": {
+            "title": "Logistics Agents",
+            "desc": "Manage your delivery and verification team",
+            "addAgent": "Add Agent",
+            "searchPlaceholder": "Search agents by name, location or phone...",
+            "statusActive": "Active",
+            "statusInactive": "Inactive",
+            "actions": {
+                "viewPerformance": "View Performance",
+                "assignOrders": "Assign Orders",
+                "editProfile": "Edit Profile",
+                "suspend": "Suspend",
+                "delete": "Delete"
+            },
+            "rating": "Rating",
+            "reviews": "reviews",
+            "completed": "Completed",
+            "active": "Active",
+            "noAgents": "No agents found matching your search."
+        },
+        "profile": {
+            "title": "Profile Settings",
+            "desc": "Manage your account information",
+            "account": "Account",
+            "verified": "Verified",
+            "personalInfo": "Personal Information",
+            "fullName": "Full Name",
+            "email": "Email Address",
+            "phone": "Phone Number",
+            "phonePlaceholder": "+255 7XX XXX XXX",
+            "address": "Default Delivery Address",
+            "addressPlaceholder": "Enter your delivery address",
+            "cancel": "Cancel",
+            "save": "Save Changes",
+            "security": {
+                "title": "Security",
+                "password": "Password",
+                "lastChanged": "Last changed {{days}} days ago",
+                "change": "Change",
+                "twoFactor": "Two-Factor Authentication",
+                "twoFactorDesc": "Add an extra layer of security",
+                "enable": "Enable"
+            },
+            "toasts": {
+                "updated": "Profile Updated",
+                "updatedDesc": "Your profile has been saved successfully."
+            }
+        }
+    },
+    "notFound": {
+        "title": "404",
+        "message": "Oops! Page not found",
+        "returnHome": "Return to Home"
+    },
+    "footer": {
+        "description": "Your trusted partner for Kariakoo shopping. We collect, verify, consolidate, and deliver goods across Tanzania with full transparency and zero scams.",
+        "servicesTitle": "Services",
+        "contactTitle": "Contact",
+        "address": "Kariakoo, Msimbazi A<br />Big Bon Shell<br />Dar es Salaam, Tanzania",
+        "rights": "All rights reserved.",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service"
+    }
+}

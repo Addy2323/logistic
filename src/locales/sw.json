@@ -1,0 +1,442 @@
+{
+    "nav": {
+        "services": "Huduma",
+        "howItWorks": "Jinsi Inavyofanya Kazi",
+        "whyUs": "Kwanini Sisi",
+        "contact": "Wasiliana Nasi",
+        "getStarted": "Anza Sasa",
+        "dashboard": "Dashibodi",
+        "login": "Ingia"
+    },
+    "hero": {
+        "badge": "Inaaminiwa na Biashara 5,000+",
+        "title": "Nunua Kutoka Kariakoo,",
+        "subtitle": "Tunakuletea Popote",
+        "typingText": "Salama | Hakuna Utapeli | Haraka | Bidhaa Halisi",
+        "description": "Njia ya uhakika ya kununua bidhaa Kariakoo. Tunathibitisha, tunafunga, na kusafirisha bidhaa zako hadi mlangoni popote Tanzania.",
+        "getStarted": "Anza Sasa",
+        "learnMore": "Jifunze Zaidi",
+        "badges": {
+            "quality": "Ubora Umethibitishwa",
+            "express": "Usafirishaji wa Haraka",
+            "secure": "Malipo Salama"
+        },
+        "floating": {
+            "title": "Usafirishaji wa Haraka",
+            "subtitle": "Hadi mlangoni kwako"
+        },
+        "stats": {
+            "value": "10k+",
+            "label": "Bidhaa Zilizofikishwa"
+        }
+    },
+    "howItWorks": {
+        "badge": "Jinsi Inavyofanya Kazi",
+        "title": "Mchakato Rahisi,",
+        "titleGradient": "Matokeo ya Uhakika",
+        "description": "Kutoka kuagiza hadi kupokea, tunafanya manunuzi ya Kariakoo kuwa rahisi na salama.",
+        "steps": {
+            "submit": {
+                "title": "Weka Oda Yako",
+                "description": "Tuambie unachohitaji au tuma picha ya bidhaa unayotaka."
+            },
+            "verify": {
+                "title": "Tunathibitisha Ubora",
+                "description": "Wakala wetu anakagua bidhaa dukani na kukutumia uthibitisho."
+            },
+            "approve": {
+                "title": "Thibitisha na Lipia",
+                "description": "Ukiridhika, fanya malipo salama kupitia mfumo wetu."
+            },
+            "delivery": {
+                "title": "Usafirishaji wa Haraka",
+                "description": "Tunafunga na kusafirisha mzigo wako haraka na kwa usalama."
+            }
+        }
+    },
+    "services": {
+        "badge": "Huduma Zetu",
+        "title": "Suluhisho Kamili",
+        "titleGradient": "La Usafirishaji",
+        "description": "Tunashughulikia kila kitu kutoka kutafuta bidhaa hadi kukufikishia, kuhakikisha unapata huduma bora.",
+        "learnMore": "Jifunze Zaidi",
+        "items": {
+            "collection": {
+                "title": "Ukusanyaji wa Bidhaa",
+                "description": "Tunakusanya bidhaa kutoka maduka yaliyothibitishwa Kariakoo kwa niaba yako."
+            },
+            "verification": {
+                "title": "Uthibitishaji wa Ubora",
+                "description": "Mawakala wetu wanakagua ubora wa bidhaa kabla ya kununua."
+            },
+            "consolidation": {
+                "title": "Kuunganisha na Kufunga",
+                "description": "Tunaunganisha oda mbalimbali na kuzifunga pamoja kwa usalama."
+            },
+            "express": {
+                "title": "Usafirishaji wa Haraka",
+                "description": "Usafirishaji wa haraka na wa uhakika kwenda mkoa wowote Tanzania."
+            },
+            "wholesaler": {
+                "title": "Huduma za Jumla",
+                "description": "Bei maalum na huduma za kipekee kwa wafanyabiashara wa jumla."
+            },
+            "logistics": {
+                "title": "Usimamizi wa Usafirishaji",
+                "description": "Usimamizi kamili wa usafirishaji kutoka Kariakoo hadi mlangoni kwako."
+            }
+        }
+    },
+    "whyUs": {
+        "badge": "Kwanini Sisi",
+        "title": "Faida za",
+        "titleGradient": "MHEMA",
+        "description": "Tunabadilisha jinsi ya kufanya biashara Kariakoo kwa uwazi, haraka, na uhakika wa kutotapeliwa.",
+        "stats": {
+            "accuracy": "Usahihi wa Uthibitishaji",
+            "verification": "Muda wa Kuhakiki",
+            "scams": "Utapeli Ulioripotiwa"
+        },
+        "items": {
+            "time": {
+                "title": "Okoa Muda",
+                "description": "Huna haja ya kusafiri hadi Dar. Tunakufanyia kazi yote."
+            },
+            "assurance": {
+                "title": "Uhakika Kamili",
+                "description": "Tunalipa wauzaji tu baada ya kuthibitisha bidhaa."
+            },
+            "quality": {
+                "title": "Ubora Kwanza",
+                "description": "Ukaguzi wa kina wa kila bidhaa kabla ya kusafirisha."
+            },
+            "value": {
+                "title": "Thamani Bora",
+                "description": "Pata bei za jumla za Kariakoo moja kwa moja."
+            },
+            "professional": {
+                "title": "Timu ya Kitaalamu",
+                "description": "Mawakala wenye uzoefu wanaoijua Kariakoo vizuri."
+            },
+            "partner": {
+                "title": "Mshirika Wako",
+                "description": "Tunakua na biashara yako, tukisimamia usafirishaji wote."
+            }
+        }
+    },
+    "contact": {
+        "badge": "Wasiliana Nasi",
+        "title": "Tupe Maoni",
+        "titleGradient": "Yako",
+        "description": "Una swali au unahitaji msaada na oda? Timu yetu ipo tayari kukusaidia.",
+        "items": {
+            "phone": {
+                "label": "Piga au WhatsApp"
+            },
+            "location": {
+                "label": "Ofisi Yetu",
+                "address": "Kariakoo, Dar es Salaam",
+                "welcome": "Karibu sana"
+            },
+            "hours": {
+                "label": "Muda wa Kazi",
+                "value": "Jumatatu - Jumamosi: 2:00 Asubuhi - 12:00 Jioni"
+            }
+        },
+        "cta": {
+            "title": "Upo Tayari Kuanza?",
+            "description": "Jiunge na maelfu ya wafanyabiashara wanaonunua Kariakoo kwa usalama.",
+            "login": "Ingia kwenye Akaunti",
+            "register": "Jisajili Sasa",
+            "help": "Unahitaji msaada wa haraka?",
+            "chat": "Chati WhatsApp"
+        },
+        "alerts": {
+            "whatsapp": {
+                "title": "Fungua WhatsApp?",
+                "text": "Utaelekezwa WhatsApp kuongea na timu yetu.",
+                "confirm": "Ndio, fungua sasa",
+                "cancel": "Ghairi"
+            },
+            "call": {
+                "title": "Tupigie Simu?",
+                "text": "Je, ungependa kuongea na huduma kwa wateja?",
+                "confirm": "Ndio, piga sasa",
+                "cancel": "Ghairi"
+            }
+        }
+    },
+    "auth": {
+        "branding": {
+            "title": "Mshirika Wako",
+            "titleSuffix": "Wa Kariakoo",
+            "desc": "Fuatilia oda zako, thibitisha ubora, na simamia usafirishaji sehemu moja.",
+            "features": [
+                "Ufuatiliaji wa oda muda halisi",
+                "Picha za uthibitisho wa ubora",
+                "Malipo salama"
+            ]
+        },
+        "backToHome": "Rudi nyumbani",
+        "welcomeBack": "Karibu tena",
+        "createAccount": "Tengeneza akaunti",
+        "loginDesc": "Ingiza taarifa zako kuingia kwenye akaunti",
+        "registerDesc": "Anza kutumia MHEMA EXPRESS leo",
+        "fullName": "Jina Kamili",
+        "fullNamePlaceholder": "Juma Juma",
+        "email": "Barua Pepe",
+        "emailPlaceholder": "wewe@mfano.com",
+        "password": "Nenosiri",
+        "signIn": "Ingia",
+        "signUp": "Jisajili",
+        "pleaseWait": "Tafadhali subiri...",
+        "noAccount": "Huna akaunti?",
+        "haveAccount": "Una akaunti tayari?",
+        "demo": {
+            "title": "Taarifa za Demo:",
+            "admin": "Admin",
+            "customer": "Mteja",
+            "agent": "Wakala"
+        },
+        "toasts": {
+            "welcome": "Karibu tena!",
+            "loginSuccess": "Umeingia kikamilifu",
+            "loginFailed": "Kuingia kumeshindikana",
+            "accountCreated": "Akaunti imetengenezwa!",
+            "welcomeMhema": "Karibu MHEMA EXPRESS",
+            "regFailed": "Usajili umeshindikana",
+            "nameRequired": "Jina linahitajika",
+            "nameRequiredDesc": "Tafadhali ingiza jina lako kamili"
+        }
+    },
+    "dashboard": {
+        "sidebar": {
+            "overview": "Muhtasari",
+            "orders": "Oda",
+            "customers": "Wateja",
+            "agents": "Mawakala",
+            "payments": "Malipo",
+            "transport": "Usafiri",
+            "profile": "Wasifu",
+            "settings": "Mipangilio",
+            "logout": "Toka",
+            "admin": "Admin",
+            "agent": "Wakala",
+            "customer": "Mteja",
+            "title": "Logistics Co. Ltd"
+        },
+        "overview": {
+            "welcome": "Karibu tena,",
+            "adminDescription": "Hapa kuna muhtasari wa shughuli zako za usafirishaji.",
+            "agentDescription": "Hizi ndizo kazi ulizopewa leo.",
+            "customerDescription": "Fuatilia oda zako na usimamie usafirishaji.",
+            "stats": {
+                "totalOrders": "Jumla ya Oda",
+                "pendingOrders": "Oda Zinazosubiri",
+                "myOrders": "Oda Zangu",
+                "activeOrders": "Oda Zinazoendelea",
+                "completed": "Zimekamilika",
+                "totalSpent": "Jumla Iliyotumika",
+                "totalRevenue": "Mapato Yote",
+                "earnings": "Mapato",
+                "activeAgents": "Mawakala Hewani",
+                "inProgress": "Inaendelea"
+            },
+            "quickActions": {
+                "title": "Matendo ya Haraka"
+            },
+            "actions": {
+                "newOrder": "Tengeneza Oda Mpya",
+                "newOrderDesc": "Safirisha mzigo mpya kwa wateja",
+                "manageAgents": "Simamia Mawakala",
+                "manageAgentsDesc": "Angalia na simamia mawakala wa usafirishaji",
+                "viewOrders": "Angalia Oda Zote",
+                "viewOrdersDesc": "Ona oda zote na hali zake",
+                "myOrders": "Oda Zangu",
+                "myOrdersDesc": "Angalia oda ulizopewa"
+            }
+        },
+        "orders": {
+            "title": "Oda",
+            "adminDesc": "Simamia oda zote za wateja",
+            "customerDesc": "Angalia na fuatilia oda zako",
+            "newOrder": "Oda Mpya",
+            "searchPlaceholder": "Tafuta oda...",
+            "filterPlaceholder": "Chuja kwa hali",
+            "statusAll": "Hali Zote",
+            "statusPending": "Inasubiri",
+            "statusVerified": "Imethibitishwa",
+            "statusApproved": "Imekubaliwa",
+            "statusCollecting": "Inakusanywa",
+            "statusPacking": "Inafungwa",
+            "statusDispatched": "Imesafirishwa",
+            "statusDelivered": "Imefika",
+            "table": {
+                "id": "Namba ya Oda",
+                "customer": "Mteja",
+                "product": "Bidhaa",
+                "status": "Hali",
+                "amount": "Kiasi",
+                "date": "Tarehe",
+                "actions": "Matendo"
+            },
+            "noOrders": "Hakuna oda zilizopatikana",
+            "modals": {
+                "new": {
+                    "title": "Tengeneza Oda Mpya",
+                    "desc": "Toa maelezo kuhusu bidhaa unayotaka kusafirisha.",
+                    "productDetails": "Maelezo ya Bidhaa",
+                    "productDetailsPlaceholder": "mf. Kitambaa cha Pamba - Bluu, mita 50",
+                    "shopName": "Jina la Duka (Si lazima)",
+                    "shopNamePlaceholder": "mf. Kariakoo Textiles",
+                    "quantity": "Idadi",
+                    "deliveryMethod": "Njia ya Usafirishaji",
+                    "deliveryMethodPlaceholder": "Chagua njia",
+                    "deliveryStandard": "Usafirishaji wa Kawaida (Siku 10-14)",
+                    "deliveryExpress": "Usafirishaji wa Haraka (Siku 5-7)",
+                    "deliveryCargo": "Usafirishaji wa Mizigo (Siku 3-5)",
+                    "consolidate": "Unganisha na oda nyingine",
+                    "consolidateDesc": "Tutakusanya oda zako zote na kuzifunga pamoja.",
+                    "productPhotos": "Picha za Bidhaa (Si lazima)",
+                    "upload": "Pakia",
+                    "uploadDesc": "Buruta na dondosha au bonyeza kupakia picha",
+                    "uploadLimit": "Pakia hadi picha 4 za bidhaa unayotaka tutafute.",
+                    "deliveryLocation": "Mahali pa Kupeleka",
+                    "selected": "Imechaguliwa",
+                    "cancel": "Ghairi",
+                    "submit": "Tuma Oda"
+                },
+                "detail": {
+                    "title": "Maelezo ya Oda",
+                    "consolidated": "Imeunganishwa",
+                    "payNow": "Lipia Sasa",
+                    "updateStatus": "Badilisha Hali",
+                    "productDetails": "Maelezo ya Bidhaa",
+                    "shop": "Duka",
+                    "notSpecified": "Haijabainishwa",
+                    "qty": "Idadi",
+                    "estimated": "Makadirio",
+                    "tbd": "Inasubiri",
+                    "actual": "Halisi",
+                    "pending": "Inasubiri",
+                    "deliveryAddress": "Anwani ya Kupeleka",
+                    "delivery": "usafirishaji",
+                    "assignedAgent": "Wakala Aliyepewa",
+                    "tracking": "Ufuatiliaji wa Oda",
+                    "updatedBy": "Imesasishwa na",
+                    "created": "Imetengenezwa"
+                },
+                "payment": {
+                    "title": "Kamilisha Malipo",
+                    "amount": "Kiasi cha Kulipa",
+                    "pendingVerification": "Bei Inasubiri Uthibitisho",
+                    "method": "Chagua Njia ya Malipo",
+                    "phone": "Namba ya Simu",
+                    "phonePlaceholder": "mf. 0756 312 736",
+                    "submit": "Lipia Sasa",
+                    "promptDesc": "Ujumbe wa malipo utatumwa kwenye simu yako."
+                },
+                "verify": {
+                    "title": "Thibitisha Oda",
+                    "actualPrice": "Bei Halisi (TZS)",
+                    "actualPricePlaceholder": "Ingiza bei ya mwisho kutoka dukani",
+                    "photos": "Picha za Uthibitisho",
+                    "notes": "Maelezo kwa Mteja",
+                    "notesPlaceholder": "mf. Ubora umekaguliwa, rangi inafanana na iliyoombwa.",
+                    "submit": "Kamilisha Uthibitisho"
+                }
+            },
+            "toasts": {
+                "created": "Oda imetengenezwa kikamilifu!",
+                "verified": "Oda imethibitishwa kikamilifu!",
+                "statusUpdated": "Hali ya oda imebadilishwa kuwa"
+            },
+            "alerts": {
+                "processing": "Inachakata Malipo...",
+                "initiating": "Inanzisha malipo ya {{method}} kwa {{id}}",
+                "success": "Malipo Yamekamilika!",
+                "successDesc": "Oda yako inashughulikiwa sasa."
+            }
+        },
+        "customers": {
+            "title": "Wateja",
+            "desc": "Simamia na angalia wateja wako",
+            "addCustomer": "Ongeza Mteja",
+            "searchPlaceholder": "Tafuta wateja kwa jina, barua pepe au simu...",
+            "statusActive": "Hai",
+            "statusInactive": "Haipo Hai",
+            "actions": {
+                "viewProfile": "Angalia Wasifu",
+                "editDetails": "Hariri Maelezo",
+                "deactivate": "Zima",
+                "delete": "Futa"
+            },
+            "joined": "Amejiunga",
+            "orders": "Oda",
+            "viewOrders": "Angalia Oda",
+            "noCustomers": "Hakuna wateja waliopatikana kulingana na utafutaji wako."
+        },
+        "agents": {
+            "title": "Mawakala wa Usafirishaji",
+            "desc": "Simamia timu yako ya usafirishaji na uthibitishaji",
+            "addAgent": "Ongeza Wakala",
+            "searchPlaceholder": "Tafuta mawakala kwa jina, eneo au simu...",
+            "statusActive": "Hai",
+            "statusInactive": "Haipo Hai",
+            "actions": {
+                "viewPerformance": "Angalia Utendaji",
+                "assignOrders": "Pangia Oda",
+                "editProfile": "Hariri Wasifu",
+                "suspend": "Simamisha",
+                "delete": "Futa"
+            },
+            "rating": "Viwanja",
+            "reviews": "maoni",
+            "completed": "Zimekamilika",
+            "active": "Hai",
+            "noAgents": "Hakuna mawakala waliopatikana kulingana na utafutaji wako."
+        },
+        "profile": {
+            "title": "Mipangilio ya Wasifu",
+            "desc": "Simamia taarifa za akaunti yako",
+            "account": "Akaunti",
+            "verified": "Imethibitishwa",
+            "personalInfo": "Taarifa Binafsi",
+            "fullName": "Jina Kamili",
+            "email": "Barua Pepe",
+            "phone": "Namba ya Simu",
+            "phonePlaceholder": "+255 7XX XXX XXX",
+            "address": "Anwani ya Kupeleka",
+            "addressPlaceholder": "Ingiza anwani yako ya kupeleka",
+            "cancel": "Ghairi",
+            "save": "Hifadhi Mabadiliko",
+            "security": {
+                "title": "Usalama",
+                "password": "Nenosiri",
+                "lastChanged": "Ilibadilishwa siku {{days}} zilizopita",
+                "change": "Badilisha",
+                "twoFactor": "Uthibitishaji wa Hatua Mbili",
+                "twoFactorDesc": "Ongeza ulinzi zaidi",
+                "enable": "Wezesha"
+            },
+            "toasts": {
+                "updated": "Wasifu Umesasishwa",
+                "updatedDesc": "Wasifu wako umehifadhiwa kikamilifu."
+            }
+        }
+    },
+    "notFound": {
+        "title": "404",
+        "message": "Samahani! Ukurasa haupatikani",
+        "returnHome": "Rudi Nyumbani"
+    },
+    "footer": {
+        "description": "Mshirika wako unayemwamini kwa manunuzi ya Kariakoo. Tunakusanya, tunathibitisha, tunaunganisha, na kusafirisha bidhaa kote Tanzania kwa uwazi kamili na bila utapeli.",
+        "servicesTitle": "Huduma",
+        "contactTitle": "Wasiliana",
+        "address": "Kariakoo, Msimbazi A<br />Big Bon Shell<br />Dar es Salaam, Tanzania",
+        "rights": "Haki zote zimehifadhiwa.",
+        "privacy": "Sera ya Faragha",
+        "terms": "Masharti ya Huduma"
+    }
+}

@@ -1,0 +1,41 @@
+{
+    "name": "mhema-express-backend",
+    "version": "1.0.0",
+    "description": "MHEMA Express Logistics Backend API",
+    "main": "src/index.js",
+    "type": "module",
+    "scripts": {
+        "dev": "node --max-old-space-size=4096 node_modules/nodemon/bin/nodemon.js src/index.js",
+        "start": "node src/index.js",
+        "db:generate": "prisma generate",
+        "db:migrate": "prisma migrate dev",
+        "db:push": "prisma db push",
+        "db:seed": "node prisma/seed.js",
+        "db:studio": "prisma studio"
+    },
+    "keywords": [
+        "logistics",
+        "express",
+        "api"
+    ],
+    "author": "MHEMA Express",
+    "license": "MIT",
+    "dependencies": {
+        "@prisma/client": "^5.22.0",
+        "bcryptjs": "^2.4.3",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2",
+        "jsonwebtoken": "^9.0.2",
+        "multer": "^1.4.5-lts.1",
+        "socket.io": "^4.8.3",
+        "uuid": "^9.0.1"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.0",
+        "prisma": "^5.22.0"
+    },
+    "prisma": {
+        "seed": "node prisma/seed.js"
+    }
+}

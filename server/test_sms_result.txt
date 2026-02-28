@@ -1,0 +1,8 @@
+﻿≡ƒô▒ SMS Service initialized - Enabled: true, Configured: true, Sender ID: Rodway Shop
+Attempting to send SMS to 255768828247...
+SMS sent successfully to 255768828247
+Result: {
+  "success": true,
+  "messageId": 50478876
+}
+Γ£à SMS sent successfully according to the API.
