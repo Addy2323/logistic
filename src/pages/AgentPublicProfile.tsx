@@ -263,12 +263,16 @@ export default function AgentPublicProfile() {
       <Header />
       
       {/* Top Banner Cover */}
-      <div className="h-48 md:h-64 w-full bg-gradient-to-r from-navy via-navy-light to-secondary/80 relative">
+      <div 
+        className="h-48 md:h-64 w-full bg-gradient-to-r from-navy via-navy-light to-secondary/80 relative"
+        style={{ transform: 'translate3d(0, 0, 0)', backfaceVisibility: 'hidden' }}
+      >
         <div className="absolute inset-0 bg-grid-pattern opacity-10" />
         <div className="container mx-auto px-4 h-full flex items-end">
           <Link 
             to="/" 
-            className="absolute top-6 left-6 inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-semibold py-2 px-4 rounded-xl transition-all shadow-sm"
+            className="absolute top-6 left-6 inline-flex items-center gap-2 bg-navy/60 hover:bg-navy/80 text-white font-semibold py-2 px-4 rounded-xl transition-all shadow-sm border border-white/10"
+            style={{ transform: 'translate3d(0, 0, 0)', backfaceVisibility: 'hidden' }}
           >
             <ArrowLeft className="w-4 h-4" /> Back to Agents
           </Link>
@@ -276,12 +280,18 @@ export default function AgentPublicProfile() {
       </div>
 
       {/* Main Profile Info Card */}
-      <div className="container mx-auto px-4 -mt-16 md:-mt-24 mb-20 flex-grow relative z-10">
+      <div 
+        className="container mx-auto px-4 -mt-16 md:-mt-24 mb-20 flex-grow relative z-10"
+        style={{ transform: 'translate3d(0, 0, 0)', backfaceVisibility: 'hidden' }}
+      >
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* LEFT COLUMN: Agent Bio & Card */}
           <div className="lg:col-span-1 space-y-8">
-            <Card className="rounded-3xl border-border/80 shadow-xl overflow-hidden bg-card">
+            <Card 
+              className="rounded-3xl border-border/80 shadow-xl overflow-hidden bg-card"
+              style={{ transform: 'translate3d(0, 0, 0)', backfaceVisibility: 'hidden' }}
+            >
               <CardContent className="pt-8 flex flex-col items-center text-center">
                 
                 {/* Profile Avatar */}

@@ -88,6 +88,7 @@ const corsOptions = {
 };
 
 const io = new Server(httpServer, {
+    path: '/api/socket.io',
     cors: corsOptions
 });
 
