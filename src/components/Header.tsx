@@ -29,7 +29,6 @@ const Header = () => {
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold text-foreground leading-tight">LotusRise Logistics</span>
-              <span className="text-xs text-muted-foreground leading-tight">Co. Ltd</span>
             </div>
           </a>
 

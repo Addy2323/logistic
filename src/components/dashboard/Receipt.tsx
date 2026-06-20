@@ -162,7 +162,7 @@ const Receipt: React.FC<ReceiptProps> = ({ order, onClose, autoDownload = false 
                     <div className="h-20 w-20 mx-auto sm:mx-0 mb-4 rounded-md overflow-hidden border-2 border-slate-100 shadow-sm flex items-center justify-center bg-white">
                         <img src="/logo.png" alt="LotusRise Logistics" className="h-full w-full object-cover" />
                     </div>
-                    <div className="text-sm font-bold text-emerald-700 uppercase tracking-widest">{fixSpacing("LOTUSRISE LOGISTICS CO. LTD")}</div>
+                    <div className="text-sm font-bold text-emerald-700 uppercase tracking-widest">{fixSpacing("LOTUSRISE LOGISTICS")}</div>
                     <div className="text-xs text-slate-500 max-w-[250px]">
                         {fixSpacing("Kariakoo, Dar es Salaam, Tanzania")}<br />
                         +255&nbsp;700&nbsp;000&nbsp;000 | info@lotusriselogistics.com<br />
@@ -197,7 +197,7 @@ const Receipt: React.FC<ReceiptProps> = ({ order, onClose, autoDownload = false 
                     </div>
                     <div>
                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{fixSpacing("Sender Details")}</h4>
-                        <p className="font-bold text-slate-800">{fixSpacing("LOTUSRISE LOGISTICS CO. LTD")}</p>
+                        <p className="font-bold text-slate-800">{fixSpacing("LOTUSRISE LOGISTICS")}</p>
                         <p className="text-sm text-slate-500">{fixSpacing("Kariakoo, Dar es Salaam")}</p>
                         <p className="text-sm text-slate-500">+255&nbsp;700&nbsp;000&nbsp;000</p>
                     </div>

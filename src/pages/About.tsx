@@ -150,7 +150,7 @@ const About = () => {
     return (
         <>
             <Helmet>
-                <title>Kuhusu Sisi | LotusRise Logistics Co. Ltd</title>
+                <title>Kuhusu Sisi | LotusRise Logistics</title>
                 <meta
                     name="description"
                     content="LotusRise Logistics - Kampuni ya kitaalamu inayojihusisha na kukusanya oda kutoka maduka mbalimbali na kutoa huduma ya Express Delivery ndani na nje ya Dar es Salaam."
@@ -233,7 +233,7 @@ const About = () => {
 
                                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-primary-foreground leading-tight mb-6 animate-slide-up">
                                     LotusRise
-                                    <span className="block text-secondary">Logistics Co. Ltd</span>
+                                    <span className="block text-secondary">Logistics</span>
                                 </h1>
 
                                 <p
@@ -513,7 +513,7 @@ const About = () => {
                                         </div>
                                         <h3 className="text-2xl font-bold text-foreground mb-3">Karibuni Sana!</h3>
                                         <p className="text-muted-foreground mb-6">
-                                            LotusRise Logistics Co. Ltd
+                                            LotusRise Logistics
                                             <br />
                                             <span className="text-secondary font-semibold">Uaminifu Wetu, Fahari Yako</span>
                                         </p>

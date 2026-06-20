@@ -15,7 +15,6 @@ const Footer = () => {
               </div>
               <div>
                 <div className="text-xl font-bold">LotusRise Logistics</div>
-                <div className="text-sm text-primary-foreground/60">Co. Ltd</div>
               </div>
             </div>
             <p className="text-primary-foreground/70 mb-6 max-w-md leading-relaxed">
@@ -85,7 +84,7 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="border-t border-primary-foreground/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-primary-foreground/50">
-            © {new Date().getFullYear()} LotusRise Logistics Co. Ltd. {t("footer.rights")}
+            © {new Date().getFullYear()} LotusRise Logistics. {t("footer.rights")}
           </p>
           <div className="flex gap-6">
             <a href="#" className="text-sm text-primary-foreground/50 hover:text-secondary transition-colors">

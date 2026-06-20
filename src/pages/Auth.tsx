@@ -337,7 +337,6 @@ const Auth = () => {
               </div>
               <div>
                 <div className="text-2xl font-bold">LotusRise Logistics</div>
-                <div className="text-sm text-primary-foreground/70">Co. Ltd</div>
               </div>
             </a>
 
@@ -386,7 +385,6 @@ const Auth = () => {
               </div>
               <div>
                 <div className="text-xl font-bold text-foreground">LotusRise Logistics</div>
-                <div className="text-xs text-muted-foreground">Co. Ltd</div>
               </div>
             </div>
 

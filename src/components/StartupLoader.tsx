@@ -39,9 +39,6 @@ const StartupLoader = () => {
                     <div className="h-1 w-48 bg-muted rounded-full overflow-hidden relative">
                         <div className="absolute inset-0 bg-accent-gradient animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
                     </div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-[0.2em] animate-fade-in" style={{ animationDelay: "0.5s" }}>
-                        Co. Ltd
-                    </span>
                 </div>
             </div>
         </div>

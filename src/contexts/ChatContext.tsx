@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
-import { API_HOST } from '@/config/api';
+import { API_HOST, IS_LOCAL } from '@/config/api';
 
 interface ChatContextType {
     socket: Socket | null;
@@ -39,7 +39,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 transports: ['websocket', 'polling'],
                 reconnection: true,
                 reconnectionAttempts: 5,
-                reconnectionDelay: 1000
+                reconnectionDelay: 1000,
+                path: IS_LOCAL ? '/socket.io' : '/api/socket.io'
             });
 
 

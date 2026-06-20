@@ -1,16 +1,19 @@
 // Centralized API configuration
 // This file provides the base URLs for all API calls
 
-const getApiUrl = () => {
+export const IS_LOCAL = (() => {
     const hostname = window.location.hostname;
-    const isLocal = 
+    return (
         hostname === 'localhost' || 
         hostname === '127.0.0.1' || 
         hostname.startsWith('192.168.') || 
         hostname.startsWith('10.') || 
-        hostname.endsWith('.local');
+        hostname.endsWith('.local')
+    );
+})();
 
-    if (isLocal) {
+const getApiUrl = () => {
+    if (IS_LOCAL) {
         return import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
     }
 
