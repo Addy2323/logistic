@@ -300,7 +300,7 @@ async function sendAgentAssignmentSms(agent, order) {
 Order ID: ${order.orderNumber}
 Pickup: ${order.pickupAddress}
 Delivery: ${order.deliveryAddress}
-Please login to MHEMA Express.`;
+Please login to LotusRise Logistics.`;
 
     return await sendSms(agent.user.phone, message);
 }
@@ -318,7 +318,7 @@ async function sendOrderCompletionSms(customer, order) {
 
     const message = `Order Completed
 Your order ${order.orderNumber} has been successfully delivered.
-Thank you for using MHEMA Express.`;
+Thank you for using LotusRise Logistics.`;
 
     return await sendSms(customer.phone, message);
 }

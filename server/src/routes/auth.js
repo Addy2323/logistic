@@ -46,8 +46,8 @@ router.post('/login', otpRateLimiter, async (req, res) => {
             include: { agent: true },
         });
 
-        if (user) {
-            // ----- USER EXISTS: DIRECT LOGIN -----
+        if (user && user.isPhoneVerified) {
+            // ----- USER EXISTS & VERIFIED: DIRECT LOGIN -----
             if (user.status !== 'ACTIVE') {
                 return res.status(403).json({
                     error: { message: 'Account is inactive or suspended' }
@@ -82,7 +82,40 @@ router.post('/login', otpRateLimiter, async (req, res) => {
             });
         }
 
-        // ----- NEW USER: SEND OTP FOR SIGNUP -----
+        // ----- UNVERIFIED USER / NEW SIGNUP DETAILS CHECK -----
+        const { fullName } = req.body;
+
+        if (!fullName) {
+            console.log(`[AUTH] Registration details required for phone: ${normalizedPhone}`);
+            return res.json({
+                success: true,
+                action: 'register_details_required',
+                phone: normalizedPhone
+            });
+        }
+
+        // Create or update unverified user record
+        if (user) {
+            user = await prisma.user.update({
+                where: { id: user.id },
+                data: { fullName: fullName.trim() },
+                include: { agent: true }
+            });
+            console.log(`[AUTH] Updated name for unverified user: ${user.id} (${normalizedPhone})`);
+        } else {
+            user = await prisma.user.create({
+                data: {
+                    phone: normalizedPhone,
+                    fullName: fullName.trim(),
+                    isPhoneVerified: false,
+                    role: 'CUSTOMER'
+                },
+                include: { agent: true }
+            });
+            console.log(`[AUTH] Created unverified user record: ${user.id} (${normalizedPhone})`);
+        }
+
+        // ----- SEND OTP FOR SIGNUP -----
         await prisma.otpCode.updateMany({
             where: { phone: normalizedPhone, verified: false },
             data: { verified: true } 
@@ -104,7 +137,7 @@ router.post('/login', otpRateLimiter, async (req, res) => {
             const smsService = (await import('../services/smsService.js')).default;
             await smsService.sendSms(
                 normalizedPhone,
-                `Your MHEMA Express verification code is: ${otpCode}. Valid for 5 minutes.`
+                `Your LotusRise Logistics verification code is: ${otpCode}. Valid for 5 minutes.`
             );
         } catch (smsError) {
             console.error('[OTP] Failed to send SMS:', smsError.message || smsError);
@@ -159,16 +192,31 @@ router.post('/verify-otp', async (req, res) => {
             data: { verified: true },
         });
 
-        // Auto-create new user
-        const user = await prisma.user.create({
-            data: {
-                phone: normalizedPhone,
-                isPhoneVerified: true,
-                role: 'CUSTOMER',
-            },
-            include: { agent: true },
+        // Update user status to verified
+        let user = await prisma.user.findUnique({
+            where: { phone: normalizedPhone },
+            include: { agent: true }
         });
-        console.log(`[AUTH] New user created via OTP signup: ${user.id} (${normalizedPhone})`);
+
+        if (user) {
+            user = await prisma.user.update({
+                where: { id: user.id },
+                data: { isPhoneVerified: true },
+                include: { agent: true }
+            });
+            console.log(`[AUTH] User verified via OTP: ${user.id} (${normalizedPhone})`);
+        } else {
+            // Fallback
+            user = await prisma.user.create({
+                data: {
+                    phone: normalizedPhone,
+                    isPhoneVerified: true,
+                    role: 'CUSTOMER',
+                },
+                include: { agent: true },
+            });
+            console.log(`[AUTH] Created verified user (fallback): ${user.id} (${normalizedPhone})`);
+        }
 
         const token = jwt.sign(
             { userId: user.id, role: user.role },
@@ -235,7 +283,7 @@ router.post('/resend-otp', otpRateLimiter, async (req, res) => {
             const smsService = (await import('../services/smsService.js')).default;
             await smsService.sendSms(
                 normalizedPhone,
-                `Your MHEMA Express verification code is: ${otpCode}. Valid for 5 minutes.`
+                `Your LotusRise Logistics verification code is: ${otpCode}. Valid for 5 minutes.`
             );
         } catch (smsError) {
             console.error('[OTP-RESEND] Failed to send SMS:', smsError.message || smsError);

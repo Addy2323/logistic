@@ -498,7 +498,7 @@ async function handleGhalaOrderCreated(data) {
     try {
         await smsService.sendSms(
             phone,
-            `Hello ${customer.name}, your WhatsApp order #${orderNumber} has been received! Total: TZS ${ghalaOrder.total}. An agent will contact you shortly. — MHEMA Express`
+            `Hello ${customer.name}, your WhatsApp order #${orderNumber} has been received! Total: TZS ${ghalaOrder.total}. An agent will contact you shortly. — LotusRise Logistics`
         );
     } catch (smsErr) {
         console.error('[Ghala] SMS confirmation failed (non-blocking):', smsErr.message);

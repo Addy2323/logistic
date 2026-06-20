@@ -236,9 +236,10 @@ const OtpPanel = ({
 
 // ─── Main Auth Page ─────────────────────────────────────────────
 const Auth = () => {
-  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [step, setStep] = useState<"phone" | "register" | "otp">("phone");
   const [phone, setPhone] = useState("");
   const [normalizedPhone, setNormalizedPhone] = useState("");
+  const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { loginOrSignup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -277,12 +278,36 @@ const Auth = () => {
         if (result.action === 'login') {
           toast({ title: "✅ Welcome back!", description: "You're now signed in instantly to LotusRise Logistics!" });
           navigate(redirectPath);
+        } else if (result.action === 'register_details_required') {
+          toast({ title: "New Account", description: "You are new here! Please enter your name to register." });
+          setStep("register");
         } else if (result.action === 'require_otp') {
+          // Fallback
           toast({ title: "New Account", description: "You are new here! We've sent a code via SMS to verify your number." });
           setStep("otp");
         }
       } else {
         toast({ title: "Login Failed", description: result.error, variant: "destructive" });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName.trim()) return;
+
+    setIsLoading(true);
+    try {
+      const result = await loginOrSignup(normalizedPhone, fullName.trim());
+      if (result.success) {
+        if (result.action === 'require_otp') {
+          toast({ title: "Verification Code Sent", description: "We've sent a code via SMS to verify your number." });
+          setStep("otp");
+        }
+      } else {
+        toast({ title: "Registration Failed", description: result.error, variant: "destructive" });
       }
     } finally {
       setIsLoading(false);
@@ -366,7 +391,79 @@ const Auth = () => {
             </div>
 
             {step === "otp" ? (
-              <OtpPanel phone={normalizedPhone} onBack={() => setStep("phone")} />
+              <OtpPanel phone={normalizedPhone} onBack={() => setStep(fullName ? "register" : "phone")} />
+            ) : step === "register" ? (
+              <div className="animate-in fade-in duration-300">
+                <button 
+                  type="button" 
+                  onClick={() => setStep("phone")} 
+                  className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back to phone number
+                </button>
+
+                <div className="flex justify-center mb-6">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-secondary/20 to-secondary/5 flex items-center justify-center border border-secondary/30 shadow-lg shadow-secondary/10">
+                    <Smartphone className="w-10 h-10 text-secondary" />
+                  </div>
+                </div>
+
+                <h2 className="text-2xl font-bold text-foreground text-center mb-2">
+                  Create Your Account
+                </h2>
+                <p className="text-muted-foreground text-center mb-8 text-sm">
+                  Please enter your full name to continue registration.
+                </p>
+
+                <form onSubmit={handleRegisterSubmit} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName" className="text-sm font-medium">
+                      Full Name
+                    </Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      placeholder="e.g. Given Mhema"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="h-14 text-lg"
+                      required
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone-read" className="text-sm font-medium">
+                      Phone Number
+                    </Label>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-muted-foreground">
+                        <Phone className="w-4 h-4" />
+                        <span className="text-sm font-medium border-r border-border pr-2">+255</span>
+                      </div>
+                      <Input
+                        id="phone-read"
+                        type="tel"
+                        value={phone}
+                        disabled
+                        className="pl-24 h-14 text-lg tracking-wider bg-muted/30"
+                      />
+                    </div>
+                  </div>
+
+                  <Button type="submit" variant="hero" size="xl" className="w-full" disabled={isLoading || !fullName.trim()}>
+                    {isLoading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending OTP...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5 animate-pulse-glow" /> Receive OTP
+                      </span>
+                    )}
+                  </Button>
+                </form>
+              </div>
             ) : (
               <div className="animate-in fade-in duration-300">
                 <div className="flex justify-center mb-6">

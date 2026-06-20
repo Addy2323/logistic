@@ -199,13 +199,13 @@ router.post('/', authenticateToken, authorize('ADMIN'), async (req, res) => {
         });
 
         // Send welcome SMS with credentials
-        const welcomeMessage = `Congratulations! You have been added successfully to MHEMA Express Logistics.
+        const welcomeMessage = `Congratulations! You have been added successfully to LotusRise Logistics.
 
 Your login credentials:
 Username: ${email}
 Password: ${defaultPassword}
 
-Login here: https://mhemalogistics.co.tz/auth?mode=login
+Login here: https://lotusriselogistics.com/auth?mode=login
 
 Thank you for joining us!`;
 

@@ -120,9 +120,6 @@
     padding: 0;
   }
 
-  html {
-    zoom: 90%;
-  }
 
   * {
     @apply border-border;

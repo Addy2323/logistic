@@ -18,7 +18,7 @@ router.post('/test', authenticateToken, authorize('ADMIN'), async (req, res) => 
             return res.status(400).json({ error: { message: 'Phone number is required' } });
         }
 
-        const testMessage = message || 'This is a test SMS from MHEMA Express Logistics.';
+        const testMessage = message || 'This is a test SMS from LotusRise Logistics.';
         const result = await smsService.sendSms(phone, testMessage);
 
         res.json({

@@ -24,7 +24,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  loginOrSignup: (phone: string) => Promise<{ success: boolean; action?: 'login' | 'require_otp'; error?: string }>;
+  loginOrSignup: (phone: string, fullName?: string) => Promise<{ success: boolean; action?: 'login' | 'require_otp' | 'register_details_required'; error?: string }>;
   verifyOtp: (phone: string, otpCode: string) => Promise<{ success: boolean; error?: string }>;
   resendOtp: (phone: string) => Promise<{ success: boolean; error?: string }>;
   adminLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -58,9 +58,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const loginOrSignup = async (phone: string): Promise<{ success: boolean; action?: 'login' | 'require_otp'; error?: string }> => {
+  const loginOrSignup = async (phone: string, fullName?: string): Promise<{ success: boolean; action?: 'login' | 'require_otp' | 'register_details_required'; error?: string }> => {
     try {
-      const response = await authAPI.login(phone);
+      const response = await authAPI.login(phone, fullName);
 
       if (response.success) {
         if (response.action === 'login' && response.user && response.token) {
@@ -82,6 +82,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return { success: true, action: 'login' };
         } else if (response.action === 'require_otp') {
           return { success: true, action: 'require_otp' };
+        } else if (response.action === 'register_details_required') {
+          return { success: true, action: 'register_details_required' };
         }
       }
 

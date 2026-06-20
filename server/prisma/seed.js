@@ -182,7 +182,7 @@ async function main() {
         {
             key: 'driver_assignment_sms',
             type: 'SMS',
-            content: 'Hello {driverName}, you have been assigned to order {orderNumber}. Pickup: {pickupLocation}, Delivery: {deliveryLocation}. Please contact agent at {agentPhone}.'
+            content: 'Hello {driverName}, you have been assigned to order {orderNumber}. Customer Phone: {customerPhone}, Pickup: {pickupLocation}, Delivery: {deliveryLocation}. Please contact agent at {agentPhone}.'
         },
         {
             key: 'driver_assignment_whatsapp',

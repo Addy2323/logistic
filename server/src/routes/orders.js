@@ -636,6 +636,27 @@ router.patch('/:id/status', authenticateToken, authorize('AGENT', 'ADMIN'), asyn
             }
         });
 
+        // Send SMS to customer when order is out for delivery
+        if (status === 'OUT_FOR_DELIVERY') {
+            try {
+                const latestAssignment = await prisma.driverAssignment.findFirst({
+                    where: { orderId: req.params.id },
+                    orderBy: { assignedAt: 'desc' }
+                });
+
+                if (latestAssignment) {
+                    const smsMessage = `Hello ${updatedOrder.customer.fullName || 'Customer'}, your order ${order.orderNumber} is Out for Delivery!\n\nDriver: ${latestAssignment.driverName} (${latestAssignment.driverPhone})\nVehicle: ${latestAssignment.vehiclePlateNumber} (${latestAssignment.vehicleType})\nCustomer Phone: ${updatedOrder.customer.phone}\n\nThank you for choosing LotusRise Logistics.`;
+                    
+                    await smsService.sendSms(updatedOrder.customer.phone, smsMessage);
+                    console.log(`Out for delivery SMS sent to customer: ${updatedOrder.customer.phone}`);
+                } else {
+                    console.warn(`[SMS OUT_FOR_DELIVERY] No driver assignment found for order ${order.orderNumber}`);
+                }
+            } catch (smsError) {
+                console.error('SMS out for delivery notification failed:', smsError.message || smsError);
+            }
+        }
+
         // Send SMS to customer when order is completed
         if (status === 'DELIVERED_SUCCESSFULLY') {
             try {
@@ -1460,11 +1481,11 @@ router.post('/:id/assign-driver', authenticateToken, authorize('AGENT', 'ADMIN')
 
         const smsContent = smsTemplate 
             ? formatTemplate(smsTemplate.content, templateData)
-            : `Hello ${driverName}, you have been assigned to order ${order.orderNumber}. Pickup: ${pickupLocation}, Delivery: ${deliveryLocation}.`;
+            : `Hello ${driverName}, you have been assigned to order ${order.orderNumber}. Customer Phone: ${order.customer.phone}, Pickup: ${pickupLocation}, Delivery: ${deliveryLocation}.`;
 
         const waContent = waTemplate
             ? formatTemplate(waTemplate.content, templateData)
-            : `Hello *${driverName}*, you have been assigned order *${order.orderNumber}*. Pickup: ${pickupLocation}, Delivery: ${deliveryLocation}.`;
+            : `Hello *${driverName}*, you have been assigned order *${order.orderNumber}*. Customer Phone: ${order.customer.phone}, Pickup: ${pickupLocation}, Delivery: ${deliveryLocation}.`;
 
         // Log formatted messages to console as requested
         console.log('\n================================================================');

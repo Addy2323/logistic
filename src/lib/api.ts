@@ -94,8 +94,8 @@ apiClient.interceptors.response.use(
 
 // Auth API
 export const authAPI = {
-    login: (phone: string) =>
-        apiClient.post('/auth/login', { phone }),
+    login: (phone: string, fullName?: string) =>
+        apiClient.post('/auth/login', { phone, fullName }),
 
     verifyOtp: (phone: string, otpCode: string) =>
         apiClient.post('/auth/verify-otp', { phone, otpCode }),

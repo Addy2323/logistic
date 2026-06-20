@@ -281,7 +281,7 @@ export default function AgentPublicProfile() {
           
           {/* LEFT COLUMN: Agent Bio & Card */}
           <div className="lg:col-span-1 space-y-8">
-            <Card className="rounded-3xl border-border/80 shadow-xl overflow-hidden backdrop-blur-md bg-opacity-95">
+            <Card className="rounded-3xl border-border/80 shadow-xl overflow-hidden bg-card">
               <CardContent className="pt-8 flex flex-col items-center text-center">
                 
                 {/* Profile Avatar */}

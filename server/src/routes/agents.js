@@ -405,13 +405,13 @@ router.post('/', authenticateToken, authorize('ADMIN'), async (req, res) => {
 
         // Send welcome SMS with credentials
         if (phone) {
-            const welcomeMessage = `Congratulations! You have been added successfully to MHEMA Express Logistics as an Agent.
+            const welcomeMessage = `Congratulations! You have been added successfully to LotusRise Logistics as an Agent.
 
 Your login credentials:
 Username: ${email}
 Password: ${password}
 
-Login here: https://mhemalogistics.co.tz/auth?mode=login
+Login here: https://lotusriselogistics.com/auth?mode=login
 
 Welcome to the team!`;
 
