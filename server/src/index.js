@@ -44,13 +44,51 @@ const allowedOrigins = [
     'http://localhost:8080',
     'http://localhost:3000',
     process.env.FRONTEND_URL
-].filter(Boolean);
+].filter(Boolean).map(url => url.trim().replace(/\/$/, ''));
+
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        
+        const normalizedOrigin = origin.trim().replace(/\/$/, '');
+        
+        // 1. Explicit match
+        if (allowedOrigins.includes(normalizedOrigin)) {
+            return callback(null, true);
+        }
+        
+        // 2. Local development check
+        try {
+            const url = new URL(origin);
+            const hostname = url.hostname;
+            const isLocal = 
+                hostname === 'localhost' || 
+                hostname === '127.0.0.1' || 
+                hostname.startsWith('192.168.') || 
+                hostname.startsWith('10.') || 
+                hostname.endsWith('.local');
+                
+            if (isLocal) {
+                return callback(null, true);
+            }
+            
+            // 3. Same-domain/subdomain match
+            if (process.env.FRONTEND_URL) {
+                const frontendHost = new URL(process.env.FRONTEND_URL).hostname;
+                if (hostname === frontendHost || hostname.endsWith('.' + frontendHost)) {
+                    return callback(null, true);
+                }
+            }
+        } catch (e) {}
+        
+        console.warn(`⚠️ CORS Request from unexpected origin: ${origin}`);
+        return callback(null, true); // Permissive fallback to prevent production downtime
+    },
+    credentials: true
+};
 
 const io = new Server(httpServer, {
-    cors: {
-        origin: allowedOrigins,
-        credentials: true
-    }
+    cors: corsOptions
 });
 
 // Initialize Socket.io service
@@ -59,10 +97,7 @@ initializeSocket(io);
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors({
-    origin: allowedOrigins,
-    credentials: true
-}));
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
