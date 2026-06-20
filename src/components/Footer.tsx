@@ -11,11 +11,11 @@ const Footer = () => {
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center overflow-hidden">
-                <img src="/logo.png" alt="MHEMA EXPRESS Logo" className="w-full h-full object-contain" />
+                <img src="/logo.png" alt="LotusRise Logistics Logo" className="w-full h-full object-contain" />
               </div>
               <div>
-                <div className="text-xl font-bold">MHEMA EXPRESS</div>
-                <div className="text-sm text-primary-foreground/60">Logistics Co. Ltd</div>
+                <div className="text-xl font-bold">LotusRise Logistics</div>
+                <div className="text-sm text-primary-foreground/60">Co. Ltd</div>
               </div>
             </div>
             <p className="text-primary-foreground/70 mb-6 max-w-md leading-relaxed">
@@ -85,7 +85,7 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="border-t border-primary-foreground/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-primary-foreground/50">
-            © {new Date().getFullYear()} MHEMA EXPRESS LOGISTICS CO. LTD. {t("footer.rights")}
+            © {new Date().getFullYear()} LotusRise Logistics Co. Ltd. {t("footer.rights")}
           </p>
           <div className="flex gap-6">
             <a href="#" className="text-sm text-primary-foreground/50 hover:text-secondary transition-colors">

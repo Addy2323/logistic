@@ -28,20 +28,25 @@ enum AgentAvailability {
 }
 
 enum OrderStatus {
-  PLACED
-  QUEUED
-  ASSIGNED
-  PICKED
-  IN_TRANSIT
-  DELIVERED
+  REQUEST_SUBMITTED
+  AGENT_ASSIGNED
+  PRODUCT_SOURCING
+  PRODUCT_PURCHASED
+  PRODUCT_PACKED
+  READY_FOR_DELIVERY
+  DRIVER_ASSIGNED
+  OUT_FOR_DELIVERY
+  DRIVER_ARRIVED
+  DELIVERED_SUCCESSFULLY
   COMPLETED
   CANCELLED
 }
 
 enum PaymentStatus {
+  AWAITING_PAYMENT
   PENDING
   CONFIRMED
-  FAILED
+  DISPUTED
 }
 
 enum OrderType {
@@ -66,10 +71,10 @@ enum NotificationType {
 
 model User {
   id        String     @id @default(uuid())
-  email     String     @unique
-  password  String
-  fullName  String     @map("full_name")
-  phone     String?
+  email     String?    // Optional - phone is primary identifier
+  password  String?    // Optional - OTP-only auth, no passwords
+  fullName  String?    @map("full_name")
+  phone     String     @unique  // Required - primary login identifier
   avatarUrl String?    @map("avatar_url")
   role      UserRole   @default(CUSTOMER)
 
@@ -77,10 +82,7 @@ model User {
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
 
-  // OTP Verification
-  otpCode         String?   @map("otp_code")
-  otpExpiresAt    DateTime? @map("otp_expires_at")
-  isPhoneVerified Boolean   @default(false) @map("is_phone_verified")
+  isPhoneVerified Boolean   @default(true) @map("is_phone_verified")
 
   // Relations
   agent             Agent?
@@ -90,6 +92,10 @@ model User {
   paymentConfirmations Order[]     @relation("PaymentConfirmedBy")
   chatParticipations   ChatParticipant[]
   sentMessages         ChatMessage[]
+  savedAddresses    SavedAddress[]
+  followedAgents    AgentFollower[]
+  reviews           CustomerReview[]
+  complaints        Complaint[]
 
   @@map("users")
 }
@@ -107,10 +113,27 @@ model Agent {
   lastOnlineAt         DateTime?         @map("last_online_at")
   createdAt            DateTime          @default(now()) @map("created_at")
 
+  // Agent Profile details (V2.0)
+  bio                  String?
+  region               String?
+  district             String?
+  businessName         String?           @map("business_name")
+  successRate          Decimal           @default(100.00) @map("success_rate") @db.Decimal(5, 2)
+  responseRate         Decimal           @default(100.00) @map("response_rate") @db.Decimal(5, 2)
+  completionRate       Decimal           @default(100.00) @map("completion_rate") @db.Decimal(5, 2)
+  followersCount       Int               @default(0) @map("followers_count")
+
   // Relations
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders       Order[]
   salesRecords SalesRecord[]
+  subscriptions AgentSubscription[]
+  verifications BoutiqueVerification[]
+  followers    AgentFollower[]
+  reviews      CustomerReview[]
+  paymentProfile AgentPaymentProfile?
+  products     Product[]
+  complaints   Complaint[]
 
   @@index([availabilityStatus])
   @@map("agents")
@@ -139,7 +162,7 @@ model Order {
   customerId          String        @map("customer_id")
   agentId             String?       @map("agent_id")
   orderNumber         String        @unique @map("order_number")
-  status              OrderStatus   @default(PLACED)
+  status              OrderStatus   @default(REQUEST_SUBMITTED)
   orderType           OrderType     @default(TYPE_A) @map("order_type")
   
   // Location details
@@ -168,13 +191,18 @@ model Order {
   totalAmount         Decimal?      @map("total_amount") @db.Decimal(10, 2)      // Auto-calculated
   
   // Payment
-  paymentStatus       PaymentStatus @default(PENDING) @map("payment_status")
+  paymentStatus       PaymentStatus @default(AWAITING_PAYMENT) @map("payment_status")
   paymentMethod       String?       @map("payment_method")
   paymentConfirmedAt  DateTime?     @map("payment_confirmed_at")
   paymentConfirmedBy  String?       @map("payment_confirmed_by")
   snippeReference     String?       @map("snippe_reference")
   ghalaOrderId        String?       @unique @map("ghala_order_id")
+  paymentReceiptUrl   String?       @map("payment_receipt_url")
   
+  // Delivery Verification (V2.0)
+  verificationCode    String?       @map("verification_code")
+  productId           String?       @map("product_id")
+
   // Timestamps
   placedAt            DateTime      @default(now()) @map("placed_at")
   assignedAt          DateTime?     @map("assigned_at")
@@ -191,6 +219,10 @@ model Order {
   salesRecord         SalesRecord?
   notifications       Notification[]
   chatRooms           ChatRoom[]
+  product             Product?           @relation(fields: [productId], references: [id], onDelete: SetNull)
+  driverAssignments   DriverAssignment[]
+  review              CustomerReview?
+  complaints          Complaint[]
 
   @@index([customerId])
   @@index([agentId])
@@ -346,4 +378,264 @@ model SmsLog {
   @@index([status])
   @@index([createdAt])
   @@map("sms_logs")
+}
+
+// OTP codes for phone-only authentication
+model OtpCode {
+  id        String   @id @default(uuid())
+  phone     String
+  code      String   // 6-digit OTP
+  expiresAt DateTime @map("expires_at")
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([phone, verified])
+  @@index([expiresAt])
+  @@map("otp_codes")
+}
+
+enum SubscriptionPlan {
+  WEEKLY
+  MONTHLY
+  SEMI_ANNUAL
+  ANNUAL
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum VerificationType {
+  PAID
+  MERIT
+}
+
+enum VerificationStatus {
+  AWAITING_APPROVAL
+  APPROVED
+  SUSPENDED
+  REJECTED
+}
+
+enum VerificationLevel {
+  SILVER
+  GOLD
+  PLATINUM
+  NONE
+}
+
+enum ComplaintCategory {
+  WRONG_PRODUCT
+  MISSING_PRODUCT
+  DAMAGED_PRODUCT
+  FRAUDULENT_ACTIVITY
+  DELIVERY_ISSUES
+}
+
+enum ComplaintStatus {
+  PENDING
+  INVESTIGATING
+  RESOLVED
+  DISMISSED
+}
+
+enum AddressType {
+  HOME
+  OFFICE
+  SHOP
+  WAREHOUSE
+  OTHER
+}
+
+model AgentSubscription {
+  id              String             @id @default(uuid())
+  agentId         String             @map("agent_id")
+  plan            SubscriptionPlan
+  amount          Decimal            @db.Decimal(10, 2)
+  status          SubscriptionStatus @default(PENDING)
+  startDate       DateTime           @default(now()) @map("start_date")
+  endDate         DateTime           @map("end_date")
+  snippeReference String?            @map("snippe_reference")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  agent           Agent              @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("agent_subscriptions")
+}
+
+model SubscriptionPackage {
+  id          String   @id @default(uuid())
+  key         String   @unique // WEEKLY, MONTHLY, SEMI_ANNUAL, ANNUAL
+  name        String
+  price       Decimal  @db.Decimal(10, 2)
+  benefits    String[] @default([])
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("subscription_packages")
+}
+
+model BoutiqueVerification {
+  id             String             @id @default(uuid())
+  agentId        String             @map("agent_id")
+  type           VerificationType
+  status         VerificationStatus @default(AWAITING_APPROVAL)
+  level          VerificationLevel  @default(NONE)
+  plan           String?            // WEEKLY, MONTHLY, SEMI_ANNUAL, ANNUAL
+  amount         Decimal?           @db.Decimal(10, 2)
+  startDate      DateTime?          @map("start_date")
+  endDate        DateTime?          @map("end_date")
+  kycCompleted   Boolean            @default(false) @map("kyc_completed")
+  kycDocumentUrl String?            @map("kyc_document_url")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  agent          Agent              @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("boutique_verifications")
+}
+
+model AgentFollower {
+  id        String   @id @default(uuid())
+  agentId   String   @map("agent_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, userId])
+  @@map("agent_followers")
+}
+
+model CustomerReview {
+  id              String   @id @default(uuid())
+  orderId         String   @unique @map("order_id")
+  agentId         String   @map("agent_id")
+  customerId      String   @map("customer_id")
+  communication   Int      // 1-5
+  deliverySpeed   Int      @map("delivery_speed") // 1-5
+  professionalism Int      // 1-5
+  productQuality  Int      @map("product_quality") // 1-5
+  overallScore    Decimal  @map("overall_score") @db.Decimal(3, 2)
+  comment         String?
+  images          String[] @default([])
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  agent           Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  customer        User     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("customer_reviews")
+}
+
+model Complaint {
+  id             String            @id @default(uuid())
+  orderId        String            @map("order_id")
+  customerId     String            @map("customer_id")
+  agentId        String?           @map("agent_id")
+  category       ComplaintCategory
+  status         ComplaintStatus   @default(PENDING)
+  description    String
+  evidenceImages String[]          @default([]) @map("evidence_images")
+  adminNotes     String?           @map("admin_notes")
+  resolvedAt     DateTime?         @map("resolved_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  order          Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer       User              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  agent          Agent?            @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  @@map("complaints")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  agentId     String   @map("agent_id")
+  name        String
+  slug        String   @unique
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String?  @map("image_url")
+  sourceLink  String?  @map("source_link")
+  clicks      Int      @default(0)
+  views       Int      @default(0)
+  conversions Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  orders      Order[]
+
+  @@map("products")
+}
+
+model DriverAssignment {
+  id                 String   @id @default(uuid())
+  orderId            String   @map("order_id")
+  driverName         String   @map("driver_name")
+  driverPhone        String   @map("driver_phone")
+  vehicleType        String   @map("vehicle_type")
+  vehiclePlateNumber String   @map("vehicle_plate_number")
+  pickupLocation     String   @map("pickup_location")
+  deliveryLocation   String   @map("delivery_location")
+  notes              String?
+  assignedAt         DateTime @default(now()) @map("assigned_at")
+
+  order              Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("driver_assignments")
+}
+
+model SavedAddress {
+  id         String      @id @default(uuid())
+  customerId String      @map("customer_id")
+  name       String
+  type       AddressType @default(OTHER)
+  address    String
+  lat        Decimal     @db.Decimal(10, 8)
+  lng        Decimal     @db.Decimal(11, 8)
+  street     String?
+  ward       String?
+  district   String?
+  region     String?
+  country    String      @default("Tanzania")
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  customer   User        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("saved_addresses")
+}
+
+model AgentPaymentProfile {
+  id                     String   @id @default(uuid())
+  agentId                String   @unique @map("agent_id")
+  mobileMoneyNumbers     Json?    @map("mobile_money_numbers")
+  bankAccounts           Json?    @map("bank_accounts")
+  lipaNumbers            Json?    @map("lipa_numbers")
+  qrCodeUrls             Json?    @map("qr_code_urls")
+  cashCollectionAvailable Boolean  @default(true) @map("cash_collection_available")
+  isVerified             Boolean  @default(false) @map("is_verified")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  agent                  Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("agent_payment_profiles")
+}
+
+model NotificationTemplate {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  type      String
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("notification_templates")
 }

@@ -16,6 +16,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { API_HOST } from "@/config/api";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import VerifiedBadge from "@/components/VerifiedBadge";
 
 
 interface Agent {
@@ -34,6 +36,11 @@ interface Agent {
         phone?: string;
         avatarUrl?: string;
     };
+    verifications?: {
+        id: string;
+        level: string;
+        status: string;
+    }[];
 }
 
 
@@ -64,6 +71,11 @@ const DashboardAgents = () => {
         commissionRate: 10,
         maxOrderCapacity: 5,
     });
+
+    const [isVerificationOpen, setIsVerificationOpen] = useState(false);
+    const [verificationAgent, setVerificationAgent] = useState<Agent | null>(null);
+    const [selectedVerificationLevel, setSelectedVerificationLevel] = useState<string>("NONE");
+    const [updatingVerification, setUpdatingVerification] = useState(false);
 
     const isAdmin = user?.role === "ADMIN";
 
@@ -149,6 +161,29 @@ const DashboardAgents = () => {
         }
     };
 
+    const handleUpdateVerification = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!verificationAgent) return;
+
+        setUpdatingVerification(true);
+        try {
+            const response: any = await agentsAPI.update(verificationAgent.id, {
+                boutiqueLevel: selectedVerificationLevel
+            });
+
+            if (response && response.success) {
+                toast.success(`Verification level updated successfully!`);
+                setIsVerificationOpen(false);
+                setVerificationAgent(null);
+                fetchAgents();
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Failed to update verification level");
+        } finally {
+            setUpdatingVerification(false);
+        }
+    };
+
     const handleViewStats = async (agent: Agent) => {
         setSelectedAgent(agent);
         await fetchAgentStats(agent.id);
@@ -218,8 +253,16 @@ const DashboardAgents = () => {
                                         </AvatarFallback>
                                     </Avatar>
                                     <div>
-
-                                        <h3 className="font-semibold text-foreground">{agent.user.fullName}</h3>
+                                        <h3 className="font-semibold text-foreground flex items-center gap-1.5">
+                                            {agent.user.fullName}
+                                            {(() => {
+                                                const lvl = agent.verifications?.[0]?.level || 'NONE';
+                                                if (lvl !== 'NONE') {
+                                                    return <VerifiedBadge size={16} className="shrink-0" title={`${lvl} Verified Agent`} />;
+                                                }
+                                                return null;
+                                            })()}
+                                        </h3>
                                         <p className="text-sm text-muted-foreground">{agent.user.email}</p>
                                     </div>
                                 </div>
@@ -242,6 +285,16 @@ const DashboardAgents = () => {
                                             <DropdownMenuItem onClick={() => handleViewStats(agent)}>
                                                 {t("dashboard.agents.actions.viewPerformance")}
                                             </DropdownMenuItem>
+                                            {isAdmin && (
+                                                <DropdownMenuItem onClick={() => {
+                                                    setVerificationAgent(agent);
+                                                    const currentLevel = agent.verifications?.[0]?.level || "NONE";
+                                                    setSelectedVerificationLevel(currentLevel);
+                                                    setIsVerificationOpen(true);
+                                                }}>
+                                                    Manage Verification
+                                                </DropdownMenuItem>
+                                            )}
                                             <DropdownMenuItem
                                                 className="text-destructive focus:text-destructive"
                                                 onClick={() => handleDeleteAgent(agent.id)}
@@ -431,6 +484,43 @@ const DashboardAgents = () => {
                             )}
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Manage Verification Modal */}
+            <Dialog open={isVerificationOpen} onOpenChange={setIsVerificationOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Manage Verification Level</DialogTitle>
+                        <DialogDescription>
+                            Manually grant or revoke verified status (blue tick) for {verificationAgent?.user.fullName}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleUpdateVerification} className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Boutique Verification Level</label>
+                            <Select
+                                value={selectedVerificationLevel}
+                                onValueChange={setSelectedVerificationLevel}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select verification level" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="NONE">None (Unverified)</SelectItem>
+                                    <SelectItem value="SILVER">Silver Verified Boutique</SelectItem>
+                                    <SelectItem value="GOLD">Gold Verified Boutique</SelectItem>
+                                    <SelectItem value="PLATINUM">Platinum Sourcing Partner</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground italic">
+                                Setting any level other than "None" will grant the agent the blue verified tick badge on their public profile.
+                            </p>
+                        </div>
+                        <Button type="submit" variant="hero" className="w-full" disabled={updatingVerification}>
+                            {updatingVerification ? "Saving..." : "Save Verification Level"}
+                        </Button>
+                    </form>
                 </DialogContent>
             </Dialog>
         </div>

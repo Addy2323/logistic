@@ -48,6 +48,38 @@ export const authenticateToken = async (req, res, next) => {
     }
 };
 
+export const optionalAuthenticateToken = async (req, res, next) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+
+        if (!token) {
+            return next();
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.userId },
+            include: { agent: true }
+        });
+
+        if (user && user.status === 'ACTIVE') {
+            req.user = {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                fullName: user.fullName,
+                avatarUrl: user.avatarUrl,
+                agent: user.agent
+            };
+        }
+        next();
+    } catch (error) {
+        next();
+    }
+};
+
 export const authorize = (...roles) => {
     return (req, res, next) => {
         if (!req.user) {

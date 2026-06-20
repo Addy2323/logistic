@@ -150,14 +150,14 @@ const About = () => {
     return (
         <>
             <Helmet>
-                <title>Kuhusu Sisi | MHEMA EXPRESS LOGISTICS CO. LTD</title>
+                <title>Kuhusu Sisi | LotusRise Logistics Co. Ltd</title>
                 <meta
                     name="description"
-                    content="MHEMA EXPRESS LOGISTICS - Kampuni ya kitaalamu inayojihusisha na kukusanya oda kutoka maduka mbalimbali na kutoa huduma ya Express Delivery ndani na nje ya Dar es Salaam."
+                    content="LotusRise Logistics - Kampuni ya kitaalamu inayojihusisha na kukusanya oda kutoka maduka mbalimbali na kutoa huduma ya Express Delivery ndani na nje ya Dar es Salaam."
                 />
                 <meta
                     name="keywords"
-                    content="MHEMA EXPRESS, Kariakoo, logistics, Tanzania, Dar es Salaam, Zanzibar, delivery, shipping, cargo"
+                    content="LotusRise Logistics, Kariakoo, logistics, Tanzania, Dar es Salaam, Zanzibar, delivery, shipping, cargo"
                 />
             </Helmet>
 
@@ -193,7 +193,7 @@ const About = () => {
                                 <img
                                     key={img}
                                     src={img}
-                                    alt={`MHEMA EXPRESS Logistics - ${img.replace('/hero-', '').replace('.png', '').replace('-', ' ')} huduma`}
+                                    alt={`LotusRise Logistics - ${img.replace('/hero-', '').replace('.png', '').replace('-', ' ')} huduma`}
                                     className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ${index === currentImageIndex ? "opacity-100" : "opacity-0"}`}
                                 />
                             ))}
@@ -232,8 +232,8 @@ const About = () => {
                                 </div>
 
                                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-primary-foreground leading-tight mb-6 animate-slide-up">
-                                    MHEMA EXPRESS
-                                    <span className="block text-secondary">LOGISTICS CO. LTD</span>
+                                    LotusRise
+                                    <span className="block text-secondary">Logistics Co. Ltd</span>
                                 </h1>
 
                                 <p
@@ -290,7 +290,7 @@ const About = () => {
                                 </span>
                                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground mb-6">
                                     Kwa Nini Tulianza
-                                    <span className="block text-gradient">MHEMA EXPRESS?</span>
+                                    <span className="block text-gradient">LotusRise Logistics?</span>
                                 </h2>
                                 <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
                                     Kampuni ilianzishwa baada ya kubaini changamoto kubwa kwa wateja wengi wanapojaribu
@@ -433,7 +433,7 @@ const About = () => {
                             </span>
                             <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground mb-6">
                                 Kwa Nini
-                                <span className="text-gradient"> MHEMA EXPRESS?</span>
+                                <span className="text-gradient"> LotusRise Logistics?</span>
                             </h2>
                             <p className="text-lg text-muted-foreground">
                                 Huduma zetu hutolewa kwa makubaliano ya pande zote, kwa uaminifu mkubwa na weledi wa
@@ -513,7 +513,7 @@ const About = () => {
                                         </div>
                                         <h3 className="text-2xl font-bold text-foreground mb-3">Karibuni Sana!</h3>
                                         <p className="text-muted-foreground mb-6">
-                                            MHEMA EXPRESS LOGISTICS CO. LTD
+                                            LotusRise Logistics Co. Ltd
                                             <br />
                                             <span className="text-secondary font-semibold">Uaminifu Wetu, Fahari Yako</span>
                                         </p>

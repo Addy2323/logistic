@@ -127,7 +127,7 @@ const Hero = () => {
                 <img
                   key={img}
                   src={img}
-                  alt={`MHEMA EXPRESS Logistics - ${img.replace('/hero-', '').replace('.png', '').replace('-', ' ')} service`}
+                  alt={`LotusRise Logistics - ${img.replace('/hero-', '').replace('.png', '').replace('-', ' ')} service`}
                   className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 group-hover:scale-105 ${index === currentImageIndex ? "opacity-100" : "opacity-0"
                     }`}
                 />

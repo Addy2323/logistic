@@ -15,9 +15,9 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
             console.log('Fetching ADMIN metrics');
             // Admin gets full system metrics
             const totalOrders = await prisma.order.count();
-            const pendingOrders = await prisma.order.count({ where: { status: 'PLACED' } });
+            const pendingOrders = await prisma.order.count({ where: { status: 'REQUEST_SUBMITTED' } });
 
-            const completedOrders = await prisma.order.count({ where: { status: 'COMPLETED' } });
+            const completedOrders = await prisma.order.count({ where: { status: 'DELIVERED_SUCCESSFULLY' } });
             const activeAgents = await prisma.agent.count({ where: { availabilityStatus: 'ONLINE' } });
 
             let totalRevenue = '0';
@@ -46,7 +46,7 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
             const completedOrders = await prisma.order.count({
                 where: {
                     agentId: req.user.agent.id,
-                    status: 'COMPLETED'
+                    status: 'DELIVERED_SUCCESSFULLY'
                 }
             });
             const agentData = await prisma.agent.findUnique({
@@ -68,7 +68,7 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
             const completedOrders = await prisma.order.count({
                 where: {
                     customerId: req.user.id,
-                    status: 'COMPLETED'
+                    status: 'DELIVERED_SUCCESSFULLY'
                 }
             });
 
@@ -212,6 +212,77 @@ router.get('/agents', authenticateToken, authorize('ADMIN'), async (req, res) =>
     } catch (error) {
         console.error('Get agent performance error:', error);
         res.status(500).json({ error: { message: 'Failed to fetch agent performance' } });
+    }
+});
+
+// Get extended admin metrics (Admin only)
+router.get('/admin-extended', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    try {
+        // 1. Subscription metrics
+        const totalSubscriptions = await prisma.agentSubscription.count();
+        const activeSubscriptions = await prisma.agentSubscription.count({
+            where: { status: 'ACTIVE', endDate: { gte: new Date() } }
+        });
+        const pendingSubscriptions = await prisma.agentSubscription.count({
+            where: { status: 'PENDING' }
+        });
+
+        // 2. Regional distributions (from saved addresses)
+        const regionalAddresses = await prisma.savedAddress.groupBy({
+            by: ['region'],
+            _count: { id: true }
+        });
+
+        // 3. Complaints statistics
+        const totalComplaints = await prisma.complaint.count();
+        const pendingComplaints = await prisma.complaint.count({ where: { status: 'PENDING' } });
+        const resolvedComplaints = await prisma.complaint.count({ where: { status: 'RESOLVED' } });
+        const dismissedComplaints = await prisma.complaint.count({ where: { status: 'DISMISSED' } });
+
+        const complaintsByCategory = await prisma.complaint.groupBy({
+            by: ['category'],
+            _count: { id: true }
+        });
+
+        // 4. Boutique verified agent counts
+        const boutiqueCounts = await prisma.agentVerification.groupBy({
+            by: ['level'],
+            where: { status: 'APPROVED' },
+            _count: { id: true }
+        });
+
+        res.json({
+            success: true,
+            data: {
+                subscriptions: {
+                    total: totalSubscriptions,
+                    active: activeSubscriptions,
+                    pending: pendingSubscriptions,
+                    revenue: activeSubscriptions * 50000
+                },
+                regionalDistribution: regionalAddresses.map(r => ({
+                    region: r.region || 'Unknown',
+                    count: r._count.id
+                })),
+                complaints: {
+                    total: totalComplaints,
+                    pending: pendingComplaints,
+                    resolved: resolvedComplaints,
+                    dismissed: dismissedComplaints,
+                    categories: complaintsByCategory.map(c => ({
+                        category: c.category,
+                        count: c._count.id
+                    }))
+                },
+                boutique: boutiqueCounts.map(b => ({
+                    level: b.level,
+                    count: b._count.id
+                }))
+            }
+        });
+    } catch (error) {
+        console.error('Get extended analytics error:', error);
+        res.status(500).json({ error: { message: 'Failed to fetch extended analytics' } });
     }
 });
 

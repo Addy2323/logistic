@@ -72,7 +72,66 @@ async function handlePaymentCompleted(data) {
     });
 
     if (!order) {
-        console.warn(`Snippe webhook: order not found for id=${orderId} ref=${reference}`);
+        // Check if this is an AgentSubscription payment instead
+        const subscription = await prisma.agentSubscription.findFirst({
+            where: {
+                OR: [
+                    { id: orderId },
+                    { snippeReference: reference }
+                ]
+            },
+            include: {
+                agent: {
+                    include: {
+                        user: true
+                    }
+                }
+            }
+        });
+
+        if (subscription) {
+            if (subscription.status === 'ACTIVE') {
+                console.log(`Snippe webhook: subscription ${subscription.id} already active, skipping`);
+                return;
+            }
+
+            // Confirm payment for subscription
+            await prisma.agentSubscription.update({
+                where: { id: subscription.id },
+                data: {
+                    status: 'ACTIVE',
+                    amount: amountPaid ? parseFloat(amountPaid) : subscription.amount
+                }
+            });
+
+            // Create notification for the agent
+            await prisma.notification.create({
+                data: {
+                    userId: subscription.agent.userId,
+                    type: 'PAYMENT_CONFIRMED',
+                    title: 'Subscription Activated',
+                    message: `Your package ${subscription.plan} has been successfully activated. Auto-assigned orders are now enabled.`
+                }
+            });
+
+            // Notify admins
+            const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+            for (const admin of admins) {
+                await prisma.notification.create({
+                    data: {
+                        userId: admin.id,
+                        type: 'PAYMENT_CONFIRMED',
+                        title: 'Agent Subscription Paid',
+                        message: `Agent ${subscription.agent.user.fullName || 'Unknown'} paid TZS ${parseFloat(amountPaid || subscription.amount).toLocaleString()} for ${subscription.plan} subscription.`
+                    }
+                });
+            }
+
+            console.log(`Snippe webhook: agent subscription ${subscription.id} payment confirmed`);
+            return;
+        }
+
+        console.warn(`Snippe webhook: order or subscription not found for id=${orderId} ref=${reference}`);
         return;
     }
 
@@ -193,7 +252,38 @@ async function handlePaymentFailed(data) {
         }
     });
 
-    if (!order) return;
+    if (!order) {
+        // Check if it's a subscription instead
+        const subscription = await prisma.agentSubscription.findFirst({
+            where: {
+                OR: [
+                    { id: orderId },
+                    { snippeReference: reference }
+                ]
+            },
+            include: { agent: true }
+        });
+
+        if (subscription) {
+            // Update subscription to CANCELLED
+            await prisma.agentSubscription.update({
+                where: { id: subscription.id },
+                data: { status: 'CANCELLED' }
+            });
+
+            // Notify agent
+            await prisma.notification.create({
+                data: {
+                    userId: subscription.agent.userId,
+                    type: 'PAYMENT_CONFIRMED',
+                    title: 'Subscription Payment Failed',
+                    message: `Your payment for subscription ${subscription.plan} failed. Reason: ${reason}. Please try again.`
+                }
+            });
+            console.log(`Snippe webhook: subscription payment failed for ${subscription.id} — ${reason}`);
+        }
+        return;
+    }
 
     // Notify customer of failure
     await prisma.notification.create({
@@ -371,7 +461,7 @@ async function handleGhalaOrderCreated(data) {
             productPrice: ghalaOrder.total ? parseFloat(ghalaOrder.total) : null,
             estimatedCost: ghalaOrder.total ? parseFloat(ghalaOrder.total) : null,
             productImageUrls: [],
-            status: 'PLACED',
+            status: 'REQUEST_SUBMITTED',
             ghalaOrderId: String(ghalaOrder.id)
         },
         include: {

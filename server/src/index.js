@@ -1,4 +1,7 @@
 import express from 'express';
+
+
+
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -20,6 +23,12 @@ import chatRoutes from './routes/chat.js';
 import userRoutes from './routes/users.js';
 import smsRoutes from './routes/sms.js';
 import webhookRoutes from './routes/webhooks.js';
+import templatesRoutes from './routes/templates.js';
+import productRoutes from './routes/products.js';
+import subscriptionRoutes from './routes/subscriptions.js';
+import addressRoutes from './routes/addresses.js';
+import reviewRoutes from './routes/reviews.js';
+import complaintRoutes from './routes/complaints.js';
 
 
 // Load environment variables
@@ -73,6 +82,12 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/sms', smsRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/templates', templatesRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/addresses', addressRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/complaints', complaintRoutes);
 
 
 // Health check

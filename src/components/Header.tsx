@@ -23,13 +23,13 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
-          <a href="/" className="flex items-center gap-3 group" aria-label="MHEMA EXPRESS Home">
+          <a href="/" className="flex items-center gap-3 group" aria-label="LotusRise Logistics Home">
             <div className="w-12 h-12 rounded-full bg-white shadow-sm border border-border flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
-              <img src="/logo.png" alt="MHEMA EXPRESS Logo" className="w-full h-full object-contain" />
+              <img src="/logo.png" alt="LotusRise Logistics Logo" className="w-full h-full object-contain" />
             </div>
             <div className="flex flex-col">
-              <span className="text-lg font-bold text-foreground leading-tight">MHEMA EXPRESS</span>
-              <span className="text-xs text-muted-foreground leading-tight">Logistics Co. Ltd</span>
+              <span className="text-lg font-bold text-foreground leading-tight">LotusRise Logistics</span>
+              <span className="text-xs text-muted-foreground leading-tight">Co. Ltd</span>
             </div>
           </a>
 

@@ -223,7 +223,7 @@ const DashboardPaymentSettings = () => {
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Account Name</label>
                             <Input
-                                placeholder="e.g. MHEMA LOGISTICS"
+                                placeholder="e.g. LOTUSRISE LOGISTICS"
                                 value={newQR.accountName}
                                 onChange={(e) => setNewQR({ ...newQR, accountName: e.target.value })}
                                 required

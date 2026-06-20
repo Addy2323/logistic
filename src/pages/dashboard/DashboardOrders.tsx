@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { ordersAPI, transportAPI, paymentQRAPI, chatsAPI, getImageUrl, customersAPI } from "@/lib/api";
+import { ordersAPI, transportAPI, paymentQRAPI, chatsAPI, getImageUrl, customersAPI, agentsAPI, addressesAPI, reviewsAPI } from "@/lib/api";
 import OrderStatusBadge from "@/components/dashboard/OrderStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, Plus, Eye, MapPin, Package, RefreshCw, CreditCard, DollarSign, MessageSquare, Printer, Trash2, CheckCircle, Image as ImageIcon } from "lucide-react";
+import { Search, Plus, Eye, MapPin, Package, RefreshCw, CreditCard, DollarSign, MessageSquare, Printer, Trash2, CheckCircle, Image as ImageIcon, Star, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
 import LocationPicker from "@/components/dashboard/LocationPicker";
@@ -38,6 +39,8 @@ import { useChat } from "@/contexts/ChatContext";
 import ChatWindow from "@/components/chat/ChatWindow";
 import OrderReceipt from "../../components/dashboard/Receipt";
 import { API_HOST } from "@/config/api";
+import VerifiedBadge from "@/components/VerifiedBadge";
+import DeliveryRouteMap from "@/components/dashboard/DeliveryRouteMap";
 import {
   Pagination,
   PaginationContent,
@@ -78,6 +81,8 @@ interface Order {
   packageWeight?: number;
   productImageUrls: string[];
   isVerified: boolean;
+  agentId?: string;
+  paymentReceiptUrl?: string;
 
   // Pricing breakdown
   productPrice?: number;
@@ -113,9 +118,23 @@ const DashboardOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [paymentMethodTab, setPaymentMethodTab] = useState<"stk" | "receipt">("stk");
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const [isConfirmPaymentOpen, setIsConfirmPaymentOpen] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const { setActiveChatId, activeChatId } = useChat();
+
+  // Driver Assignment States (V2.0)
+  const [isAssignDriverOpen, setIsAssignDriverOpen] = useState(false);
+  const [driverName, setDriverName] = useState("");
+  const [driverPhone, setDriverPhone] = useState("");
+  const [vehicleType, setVehicleType] = useState("Motorcycle");
+  const [vehiclePlateNumber, setVehiclePlateNumber] = useState("");
+  const [driverPickup, setDriverPickup] = useState("");
+  const [driverDelivery, setDriverDelivery] = useState("");
+  const [driverNotes, setDriverNotes] = useState("");
+  const [isAssigningDriver, setIsAssigningDriver] = useState(false);
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [transportMethods, setTransportMethods] = useState<TransportMethod[]>([]);
@@ -135,6 +154,7 @@ const DashboardOrders = () => {
     imageUrls: string[];
     imagePreviews: string[];
     isUploading: boolean;
+    productId?: string;
   }
 
   const [items, setItems] = useState<FormItem[]>([
@@ -148,16 +168,25 @@ const DashboardOrders = () => {
       imageUrls: [],
       imagePreviews: [],
       isUploading: false,
+      productId: "",
     },
   ]);
 
   const [newOrder, setNewOrder] = useState({
     pickupAddress: "",
+    pickupLat: null as number | null,
+    pickupLng: null as number | null,
     deliveryAddress: "",
+    deliveryLat: null as number | null,
+    deliveryLng: null as number | null,
     transportMethodId: "",
     orderType: "TYPE_A" as "TYPE_A" | "TYPE_B" | "TYPE_C",
     productPrice: "",
+    agentId: "",
+    productId: "",
   });
+
+  const [availableAgents, setAvailableAgents] = useState<any[]>([]);
 
   const [paymentData, setPaymentData] = useState({
     amount: "",
@@ -179,20 +208,94 @@ const DashboardOrders = () => {
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [selectingField, setSelectingField] = useState<"pickup" | "delivery" | null>(null);
 
+  // Extended V2.0 states
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [selectedAgentPaymentProfile, setSelectedAgentPaymentProfile] = useState<any>(null);
+
+  // Verification states
+  const [isVerifyingDeliveryOpen, setIsVerifyingDeliveryOpen] = useState(false);
+  const [deliveryVerificationCode, setDeliveryVerificationCode] = useState("");
+  const [tempStatusUpdate, setTempStatusUpdate] = useState("");
+
+  // Review states
+  const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
+  const [ratings, setRatings] = useState({
+    communication: 5,
+    deliverySpeed: 5,
+    professionalism: 5,
+    productQuality: 5
+  });
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  // Dispute states
+  const [isDisputeOpen, setIsDisputeOpen] = useState(false);
+  const [disputeCategory, setDisputeCategory] = useState("DELIVERY_ISSUES");
+  const [disputeReason, setDisputeReason] = useState("");
+  const [submittingDispute, setSubmittingDispute] = useState(false);
+
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const action = searchParams.get("action");
+    if (action === "new") {
+      const agentId = searchParams.get("agentId") || "";
+      const productId = searchParams.get("productId") || "";
+      const productName = searchParams.get("productName") || "";
+      const productPrice = searchParams.get("productPrice") || "";
+      const productImage = searchParams.get("productImage") || "";
+      const productDesc = searchParams.get("productDesc") || "";
+
+      // Prefill newOrder state
+      setNewOrder({
+        pickupAddress: "",
+        deliveryAddress: "",
+        transportMethodId: "",
+        orderType: "TYPE_B",
+        productPrice: productPrice,
+        agentId: agentId,
+        productId: productId,
+      });
+
+      // Prefill items state
+      setItems([
+        {
+          id: "1",
+          description: productName + (productDesc ? ` - ${productDesc}` : ""),
+          pickupAddress: "",
+          quantity: "1",
+          pair: "",
+          weight: "",
+          imageUrls: productImage ? [productImage] : [],
+          imagePreviews: productImage ? [getImageUrl(productImage) || ""] : [],
+          isUploading: false,
+          productId: productId,
+        }
+      ]);
+
+      // Open new order modal
+      setIsNewOrderOpen(true);
+
+      // Clean search parameters from URL without reloading
+      navigate("/dashboard/orders", { replace: true });
+    }
+  }, [searchParams, navigate]);
+
   const handleLocationSelect = (lat: number, lng: number, address: string) => {
     if (selectingField === "pickup") {
       setNewOrder({
         ...newOrder,
         pickupAddress: address,
-        // pickupLat: lat, // Add these to state if needed
-        // pickupLng: lng
+        pickupLat: lat,
+        pickupLng: lng
       });
     } else if (selectingField === "delivery") {
       setNewOrder({
         ...newOrder,
         deliveryAddress: address,
-        // deliveryLat: lat,
-        // deliveryLng: lng
+        deliveryLat: lat,
+        deliveryLng: lng
       });
     }
     setIsMapOpen(false);
@@ -355,6 +458,7 @@ const DashboardOrders = () => {
   useEffect(() => {
     fetchOrders();
     fetchTransportMethods();
+    fetchAvailableAgents();
     if (isCustomer) {
       fetchPaymentQRs();
     }
@@ -366,6 +470,16 @@ const DashboardOrders = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [statusFilter]);
+
+  useEffect(() => {
+    if (selectedOrder) {
+      setDriverPickup(selectedOrder.pickupAddress || "");
+      setDriverDelivery(selectedOrder.deliveryAddress || "");
+    } else {
+      setDriverPickup("");
+      setDriverDelivery("");
+    }
+  }, [selectedOrder]);
 
   const fetchOrders = async () => {
     try {
@@ -429,6 +543,17 @@ const DashboardOrders = () => {
     }
   };
 
+  const fetchAvailableAgents = async () => {
+    try {
+      const response = await agentsAPI.getPublicList();
+      if (response.success) {
+        setAvailableAgents(response.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch available agents:", error);
+    }
+  };
+
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -470,6 +595,8 @@ const DashboardOrders = () => {
 
     const orderPayload = {
       ...newOrder,
+      agentId: (newOrder.agentId && newOrder.agentId !== "auto") ? newOrder.agentId : undefined,
+      productId: newOrder.productId || undefined,
       description: finalDescription,
       packageWeight: totalWeight,
       productImageUrls: allImageUrls,
@@ -483,10 +610,16 @@ const DashboardOrders = () => {
         setIsNewOrderOpen(false);
         setNewOrder({
           pickupAddress: "",
+          pickupLat: null,
+          pickupLng: null,
           deliveryAddress: "",
+          deliveryLat: null,
+          deliveryLng: null,
           transportMethodId: "",
           orderType: "TYPE_A",
           productPrice: "",
+          agentId: "",
+          productId: "",
         });
         setSelectedCustomerId("");
         setItems([
@@ -500,6 +633,7 @@ const DashboardOrders = () => {
             imageUrls: [],
             imagePreviews: [],
             isUploading: false,
+            productId: "",
           },
         ]);
         fetchOrders();
@@ -510,18 +644,193 @@ const DashboardOrders = () => {
     }
   };
 
-  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+  const handleViewDetails = async (order: Order) => {
+    setSelectedOrder(order);
+    setSelectedAgentPaymentProfile(null);
+    setIsReviewFormOpen(false);
     try {
-      const response: any = await ordersAPI.updateStatus(orderId, newStatus);
+      const freshOrderRes: any = await ordersAPI.getById(order.id);
+      if (freshOrderRes && freshOrderRes.success) {
+        setSelectedOrder(freshOrderRes.data);
+      }
+      if (order.agentId) {
+        const paymentProfileRes: any = await agentsAPI.getAgentPaymentProfile(order.agentId);
+        if (paymentProfileRes && paymentProfileRes.success) {
+          setSelectedAgentPaymentProfile(paymentProfileRes.data);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch fresh order details or agent payment profile:", err);
+    }
+  };
+
+  const handleStatusSelect = (val: string) => {
+    if (!selectedOrder) return;
+    if (val === "DELIVERED_SUCCESSFULLY") {
+      setTempStatusUpdate(val);
+      setDeliveryVerificationCode("");
+      setIsVerifyingDeliveryOpen(true);
+    } else {
+      handleUpdateStatus(selectedOrder.id, val);
+    }
+  };
+
+  const handleVerifyDeliverySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrder || !deliveryVerificationCode.trim()) return;
+    try {
+      const response: any = await ordersAPI.updateStatus(selectedOrder.id, "DELIVERED_SUCCESSFULLY", deliveryVerificationCode.trim());
+      if (response && response.success) {
+        toast.success("Order marked as Delivered Successfully!");
+        setIsVerifyingDeliveryOpen(false);
+        handleViewDetails(selectedOrder);
+        fetchOrders();
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Invalid verification code. Please request the correct code from the customer.");
+    }
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrder) return;
+    setSubmittingReview(true);
+    try {
+      const response: any = await reviewsAPI.submit({
+        orderId: selectedOrder.id,
+        communication: ratings.communication,
+        deliverySpeed: ratings.deliverySpeed,
+        professionalism: ratings.professionalism,
+        productQuality: ratings.productQuality,
+        comment: reviewComment
+      });
+      if (response && response.success) {
+        toast.success("Thank you for your feedback! Review submitted.");
+        setIsReviewFormOpen(false);
+        setReviewComment("");
+        setRatings({
+          communication: 5,
+          deliverySpeed: 5,
+          professionalism: 5,
+          productQuality: 5
+        });
+        handleViewDetails(selectedOrder);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to submit review");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleSubmitDispute = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrder || !disputeReason.trim()) return;
+    setSubmittingDispute(true);
+    try {
+      const response: any = await ordersAPI.disputePayment(selectedOrder.id, disputeReason, disputeCategory);
+      if (response && response.success) {
+        toast.success("Dispute filed successfully. Order payment is now marked as DISPUTED. Super Admin has been notified.");
+        setIsDisputeOpen(false);
+        setDisputeReason("");
+        handleViewDetails(selectedOrder);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to file dispute");
+    } finally {
+      setSubmittingDispute(false);
+    }
+  };
+
+  const StarRating = ({ value, onChange, label }: { value: number; onChange: (val: number) => void; label: string }) => {
+    return (
+      <div className="flex items-center justify-between text-xs py-1">
+        <span className="text-muted-foreground">{label}</span>
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              className={`w-3.5 h-3.5 cursor-pointer transition-colors ${
+                star <= value ? "fill-amber-400 text-amber-400" : "text-muted-foreground opacity-30"
+              }`}
+              onClick={() => onChange(star)}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const fetchSavedAddresses = async () => {
+    try {
+      const response: any = await addressesAPI.list();
+      if (response && response.success) {
+        setSavedAddresses(response.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch saved addresses:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (isCustomer || isAdmin) {
+      fetchSavedAddresses();
+    }
+  }, [isCustomer, isAdmin]);
+
+  const handleUpdateStatus = async (orderId: string, newStatus: string, verificationCode?: string) => {
+    try {
+      const response: any = await ordersAPI.updateStatus(orderId, newStatus, verificationCode);
       if (response && response.success) {
         toast.success(`Order status updated to ${newStatus}`);
         fetchOrders();
         if (selectedOrder?.id === orderId) {
-          setSelectedOrder(null);
+          handleViewDetails(selectedOrder);
         }
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to update status");
+    }
+  };
+
+  const handleAssignDriver = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrder) return;
+    if (!driverName || !driverPhone || !vehicleType || !vehiclePlateNumber || !driverPickup || !driverDelivery) {
+      toast.error("Please fill in all required driver and route fields");
+      return;
+    }
+    
+    setIsAssigningDriver(true);
+    try {
+      const response: any = await ordersAPI.assignDriver(selectedOrder.id, {
+        driverName,
+        driverPhone,
+        vehicleType,
+        vehiclePlateNumber,
+        pickupLocation: driverPickup,
+        deliveryLocation: driverDelivery,
+        notes: driverNotes
+      });
+      
+      if (response && response.success) {
+        toast.success("Driver assigned successfully!");
+        setIsAssignDriverOpen(false);
+        
+        // Reset fields
+        setDriverName("");
+        setDriverPhone("");
+        setVehiclePlateNumber("");
+        setDriverNotes("");
+
+        // Refresh lists
+        fetchOrders();
+        setSelectedOrder(null);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to assign driver");
+    } finally {
+      setIsAssigningDriver(false);
     }
   };
 
@@ -547,16 +856,27 @@ const DashboardOrders = () => {
     }
   };
 
-  const openConfirmPayment = (order: Order) => {
+  const openConfirmPayment = async (order: Order) => {
     setSelectedOrder(order);
+    setSelectedAgentPaymentProfile(null);
     setPaymentData({
       amount: order.estimatedCost?.toString() || "",
       method: "M_PESA"
     });
     setIsConfirmPaymentOpen(true);
+    if (order.agentId) {
+      try {
+        const paymentProfileRes: any = await agentsAPI.getAgentPaymentProfile(order.agentId);
+        if (paymentProfileRes && paymentProfileRes.success) {
+          setSelectedAgentPaymentProfile(paymentProfileRes.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch agent payment profile:", err);
+      }
+    }
   };
 
-  const openPaymentModal = (order: Order) => {
+  const openPaymentModal = async (order: Order) => {
     if (!order.actualCost || order.actualCost === 0) {
       if (order.isVerified) {
         toast.success("Product verified! We are finalizing the cost. Please check back in a moment to complete your payment.", { duration: 6000 });
@@ -582,8 +902,22 @@ const DashboardOrders = () => {
       return;
     }
     setSelectedOrder(order);
+    setSelectedAgentPaymentProfile(null);
     setStkState("idle");
+    setPaymentMethodTab("stk");
+    setReceiptFile(null);
+    setIsUploadingReceipt(false);
     setIsPaymentOpen(true);
+    if (order.agentId) {
+      try {
+        const paymentProfileRes: any = await agentsAPI.getAgentPaymentProfile(order.agentId);
+        if (paymentProfileRes && paymentProfileRes.success) {
+          setSelectedAgentPaymentProfile(paymentProfileRes.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch agent payment profile:", err);
+      }
+    }
   };
 
   const handleSTKPush = async () => {
@@ -642,6 +976,34 @@ const DashboardOrders = () => {
     }
   };
 
+  const handleUploadReceipt = async () => {
+    if (!selectedOrder) return;
+    if (!receiptFile) {
+      toast.error("Please select a receipt file to upload");
+      return;
+    }
+
+    setIsUploadingReceipt(true);
+    try {
+      const formData = new FormData();
+      formData.append("receipt", receiptFile);
+      const res: any = await ordersAPI.uploadReceipt(selectedOrder.id, formData);
+      if (res && res.success) {
+        toast.success("Receipt uploaded successfully! Awaiting verification.");
+        setIsPaymentOpen(false);
+        setReceiptFile(null);
+        fetchOrders();
+      } else {
+        toast.error("Failed to upload receipt");
+      }
+    } catch (error: any) {
+      console.error("Receipt upload error:", error);
+      toast.error(error.message || "Failed to upload receipt");
+    } finally {
+      setIsUploadingReceipt(false);
+    }
+  };
+
   const filteredOrders = orders.filter(order => {
     const matchesSearch =
       order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -692,11 +1054,11 @@ const DashboardOrders = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Orders</SelectItem>
-            <SelectItem value="PLACED">Pending</SelectItem>
-            <SelectItem value="ASSIGNED">Assigned</SelectItem>
-            <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
-            <SelectItem value="DELIVERED">Delivered</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
+            <SelectItem value="REQUEST_SUBMITTED">Submitted</SelectItem>
+            <SelectItem value="AGENT_ASSIGNED">Agent Assigned</SelectItem>
+            <SelectItem value="READY_FOR_DELIVERY">Ready For Delivery</SelectItem>
+            <SelectItem value="DRIVER_ASSIGNED">Driver Assigned</SelectItem>
+            <SelectItem value="DELIVERED_SUCCESSFULLY">Delivered</SelectItem>
             <SelectItem value="CANCELLED">Cancelled</SelectItem>
           </SelectContent>
         </Select>
@@ -789,7 +1151,7 @@ const DashboardOrders = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        {isCustomer && order.paymentStatus === "PENDING" && (
+                        {isCustomer && order.paymentStatus === "AWAITING_PAYMENT" && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -803,7 +1165,7 @@ const DashboardOrders = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setSelectedOrder(order)}
+                          onClick={() => handleViewDetails(order)}
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -820,7 +1182,7 @@ const DashboardOrders = () => {
                             size="sm"
                             className="h-8 border-secondary text-secondary hover:bg-secondary hover:text-white"
                             onClick={() => {
-                              setSelectedOrder(order);
+                              handleViewDetails(order);
                               setShowReceipt(true);
                               toast.info("Downloading receipt...");
                             }}
@@ -935,6 +1297,132 @@ const DashboardOrders = () => {
                 <p className="text-[10px] text-muted-foreground italic">Admin can place an order on behalf of a customer.</p>
               </div>
             )}
+
+            {(isAdmin || isCustomer) && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Select Sourcing & Logistics Agent</label>
+                <Select
+                  value={newOrder.agentId || "auto"}
+                  onValueChange={(value) => setNewOrder({ ...newOrder, agentId: value })}
+                >
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Select an Agent" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    <SelectItem value="auto">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                          A
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-semibold">Auto-assign Agent</p>
+                          <p className="text-[10px] text-muted-foreground">Let LotusRise match you with the best available agent</p>
+                        </div>
+                      </div>
+                    </SelectItem>
+                    {availableAgents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        <div className="flex items-center gap-2">
+                          {agent.avatarUrl ? (
+                            <img
+                              src={getImageUrl(agent.avatarUrl)}
+                              alt={agent.fullName}
+                              className="w-6 h-6 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold">
+                              {agent.fullName.split(' ').map((n: string) => n[0]).join('')}
+                            </div>
+                          )}
+                          <div className="text-left">
+                            <p className="text-xs font-semibold flex items-center gap-1">
+                              {agent.fullName}
+                              {agent.boutiqueLevel !== 'NONE' && (
+                                <VerifiedBadge size={14} className="shrink-0" title="Verified Blue Tick" />
+                              )}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {agent.phone ? `Phone: ${agent.phone}` : 'No phone number'} | Rating: {agent.rating.toFixed(1)}
+                            </p>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {newOrder.agentId && newOrder.agentId !== "auto" && (
+                  (() => {
+                    const selectedAgent = availableAgents.find(a => a.id === newOrder.agentId);
+                    if (selectedAgent && selectedAgent.phone) {
+                      return (
+                        <p className="text-[11px] text-emerald-600 font-medium">
+                          Selected Agent Phone: {selectedAgent.phone} (Commission: {selectedAgent.commissionRate}%)
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()
+                )}
+              </div>
+            )}
+            {savedAddresses.length > 0 && (
+              <div className="grid grid-cols-2 gap-2 bg-muted/40 p-2.5 rounded-xl border border-border/50">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Saved Pickup Address</label>
+                  <Select
+                    onValueChange={(val) => {
+                      const addr = savedAddresses.find((a) => a.id === val);
+                      if (addr) {
+                        setNewOrder((prev) => ({
+                          ...prev,
+                          pickupAddress: addr.address,
+                          pickupLat: parseFloat(addr.lat),
+                          pickupLng: parseFloat(addr.lng)
+                        }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs bg-background">
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {savedAddresses.map((addr) => (
+                        <SelectItem key={addr.id} value={addr.id}>
+                          {addr.name} ({addr.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Saved Delivery Address</label>
+                  <Select
+                    onValueChange={(val) => {
+                      const addr = savedAddresses.find((a) => a.id === val);
+                      if (addr) {
+                        setNewOrder((prev) => ({
+                          ...prev,
+                          deliveryAddress: addr.address,
+                          deliveryLat: parseFloat(addr.lat),
+                          deliveryLng: parseFloat(addr.lng)
+                        }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs bg-background">
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {savedAddresses.map((addr) => (
+                        <SelectItem key={addr.id} value={addr.id}>
+                          {addr.name} ({addr.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <label className="text-sm font-medium">Pickup Address</label>
               <div className="flex gap-2">
@@ -1022,7 +1510,7 @@ const DashboardOrders = () => {
                   />
                   <div className="flex-1">
                     <span className="font-medium text-sm">Type B - Pay & Deliver</span>
-                    <p className="text-xs text-muted-foreground mt-0.5">I know the price. MHEMA will pay the supplier and deliver to me.</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">I know the price. LotusRise will pay the supplier and deliver to me.</p>
                   </div>
                 </label>
 
@@ -1042,7 +1530,7 @@ const DashboardOrders = () => {
                   />
                   <div className="flex-1">
                     <span className="font-medium text-sm">Type C - Source & Deliver</span>
-                    <p className="text-xs text-muted-foreground mt-0.5">I don't know the price. MHEMA will find, negotiate, buy and deliver.</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">I don't know the price. LotusRise will find, negotiate, buy and deliver.</p>
                   </div>
                 </label>
               </div>
@@ -1194,7 +1682,7 @@ const DashboardOrders = () => {
       {/* Order Detail Modal */}
       <Dialog
         open={!!selectedOrder && !isConfirmPaymentOpen && !isPaymentOpen}
-        onOpenChange={(open) => !open && setSelectedOrder(null)}
+        onOpenChange={(open) => !open && (setSelectedOrder(null) || setSelectedAgentPaymentProfile(null))}
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -1223,25 +1711,100 @@ const DashboardOrders = () => {
                     )}
                   </div>
                 </div>
-                {(isAdmin || isAgent) && selectedOrder.status !== "COMPLETED" && (
-                  <Select onValueChange={(val) => handleUpdateStatus(selectedOrder.id, val)}>
-                    <SelectTrigger className="h-9 w-[140px]">
-                      <SelectValue placeholder="Update Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PLACED">Pending</SelectItem>
-                      <SelectItem value="ASSIGNED">Assigned</SelectItem>
-                      <SelectItem value="PICKED">Picked Up</SelectItem>
-                      <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
-                      <SelectItem value="DELIVERED">Delivered</SelectItem>
-                      <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {(isAdmin || isAgent) && selectedOrder.status !== "DELIVERED_SUCCESSFULLY" && (
+                  <div className="flex gap-2">
+                    {selectedOrder.status === "READY_FOR_DELIVERY" && (
+                      <Button onClick={() => setIsAssignDriverOpen(true)} className="h-9 bg-orange-600 hover:bg-orange-700 text-white font-semibold">
+                        Assign Driver
+                      </Button>
+                    )}
+                    <Select onValueChange={handleStatusSelect}>
+                      <SelectTrigger className="h-9 w-[140px]">
+                        <SelectValue placeholder="Update Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="REQUEST_SUBMITTED">Submitted</SelectItem>
+                        <SelectItem value="AGENT_ASSIGNED">Agent Assigned</SelectItem>
+                        <SelectItem value="PRODUCT_SOURCING">Sourcing</SelectItem>
+                        <SelectItem value="PRODUCT_PURCHASED">Purchased</SelectItem>
+                        <SelectItem value="PRODUCT_PACKED">Packed</SelectItem>
+                        <SelectItem value="READY_FOR_DELIVERY">Ready For Delivery</SelectItem>
+                        <SelectItem value="DRIVER_ASSIGNED">Driver Assigned</SelectItem>
+                        <SelectItem value="OUT_FOR_DELIVERY">Out For Delivery</SelectItem>
+                        <SelectItem value="DRIVER_ARRIVED">Driver Arrived</SelectItem>
+                        <SelectItem value="DELIVERED_SUCCESSFULLY">Delivered Successfully</SelectItem>
+                        <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
               </div>
 
+              {/* Order Status Timeline (10 Tiers) */}
+              {(() => {
+                const orderTimelineSteps = [
+                  { status: 'REQUEST_SUBMITTED', label: 'Submitted' },
+                  { status: 'AGENT_ASSIGNED', label: 'Agent Assigned' },
+                  { status: 'PRODUCT_SOURCING', label: 'Sourcing' },
+                  { status: 'PRODUCT_PURCHASED', label: 'Purchased' },
+                  { status: 'PRODUCT_PACKED', label: 'Packed' },
+                  { status: 'READY_FOR_DELIVERY', label: 'Ready for Delivery' },
+                  { status: 'DRIVER_ASSIGNED', label: 'Driver Assigned' },
+                  { status: 'OUT_FOR_DELIVERY', label: 'Out for Delivery' },
+                  { status: 'DRIVER_ARRIVED', label: 'Driver Arrived' },
+                  { status: 'DELIVERED_SUCCESSFULLY', label: 'Delivered' }
+                ];
+                const currentStatusIndex = orderTimelineSteps.findIndex(s => s.status === selectedOrder.status);
+
+                return selectedOrder.status !== "CANCELLED" ? (
+                  <div className="py-4 border-b border-border/50 text-left">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2.5">Order Progress (10 Tiers)</p>
+                    <div className="hidden md:flex items-center justify-between gap-1">
+                      {orderTimelineSteps.map((step, idx) => {
+                        const isCompleted = idx < currentStatusIndex;
+                        const isCurrent = idx === currentStatusIndex;
+                        return (
+                          <div key={step.status} className="flex-1 flex flex-col items-center relative group">
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold border transition-colors z-10 ${
+                              isCompleted 
+                                ? "bg-emerald-500 border-emerald-500 text-white" 
+                                : isCurrent 
+                                  ? "bg-primary border-primary text-white ring-2 ring-primary/25" 
+                                  : "bg-background border-border text-muted-foreground"
+                            }`}>
+                              {isCompleted ? "✓" : idx + 1}
+                            </div>
+                            <span className={`text-[8px] font-semibold text-center mt-1.5 truncate max-w-[55px] ${
+                              isCurrent ? "text-primary font-bold" : "text-muted-foreground group-hover:text-foreground"
+                            }`} title={step.label}>
+                              {step.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="md:hidden flex items-center gap-2 bg-muted/40 p-2.5 rounded-xl border border-border/50">
+                      <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold text-xs">
+                        {currentStatusIndex + 1}/10
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[10px] text-muted-foreground font-semibold uppercase">Current Step</p>
+                        <p className="text-xs font-bold text-foreground">
+                          {orderTimelineSteps[currentStatusIndex]?.label || selectedOrder.status}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-3 px-4 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-semibold flex items-center gap-2 my-2 text-left">
+                    <ShieldAlert className="w-4 h-4" />
+                    This order has been cancelled and cannot proceed.
+                  </div>
+                );
+              })()}
+
               <div className="space-y-4">
-                <div className="p-4 bg-muted/50 rounded-xl">
+                <div className="p-4 bg-muted/50 rounded-xl text-left">
                   <h4 className="text-sm font-medium text-muted-foreground mb-2">Route</h4>
                   <div className="flex items-start gap-2">
                     <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
@@ -1249,6 +1812,17 @@ const DashboardOrders = () => {
                       <p className="text-sm font-medium">From: {selectedOrder.pickupAddress}</p>
                       <p className="text-sm font-medium mt-1">To: {selectedOrder.deliveryAddress}</p>
                     </div>
+                  </div>
+                  {/* Route Map */}
+                  <div className="mt-3">
+                    <DeliveryRouteMap
+                      pickupLat={selectedOrder.pickupLat ? parseFloat(selectedOrder.pickupLat.toString()) : null}
+                      pickupLng={selectedOrder.pickupLng ? parseFloat(selectedOrder.pickupLng.toString()) : null}
+                      pickupAddress={selectedOrder.pickupAddress}
+                      deliveryLat={selectedOrder.deliveryLat ? parseFloat(selectedOrder.deliveryLat.toString()) : null}
+                      deliveryLng={selectedOrder.deliveryLng ? parseFloat(selectedOrder.deliveryLng.toString()) : null}
+                      deliveryAddress={selectedOrder.deliveryAddress}
+                    />
                   </div>
                   {selectedOrder.description && (
                     <p className="text-sm text-muted-foreground mt-2">{selectedOrder.description}</p>
@@ -1392,12 +1966,30 @@ const DashboardOrders = () => {
                   </div>
                 </div>
 
+                {/* Verification Code Card for Customer */}
+                {isCustomer && !["DELIVERED_SUCCESSFULLY", "COMPLETED", "CANCELLED"].includes(selectedOrder.status) && (
+                  <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-700 dark:text-indigo-400 space-y-1 text-left">
+                    <p className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                      🔑 Delivery Verification Code
+                    </p>
+                    <p className="text-2xl font-mono font-bold tracking-widest my-1">{selectedOrder.verificationCode || "N/A"}</p>
+                    <p className="text-[10px] leading-relaxed opacity-85">
+                      Tell the driver or agent this code ONLY after you have received and inspected the delivered packages.
+                    </p>
+                  </div>
+                )}
+
                 {selectedOrder.agent && (
-                  <div className="p-4 bg-muted/50 rounded-xl">
-                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Assigned Agent</h4>
+                  <div className="p-4 bg-muted/50 rounded-xl space-y-3 text-left">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium">{selectedOrder.agent.user.fullName}</p>
+                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Assigned Sourcing Agent</h4>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <p className="text-sm font-semibold">{selectedOrder.agent.user.fullName}</p>
+                          {selectedOrder.agent.verifications?.[0]?.level && selectedOrder.agent.verifications[0].level !== 'NONE' && (
+                            <VerifiedBadge size={14} className="shrink-0" />
+                          )}
+                        </div>
                         {selectedOrder.agent.user.phone && (
                           <p className="text-xs text-muted-foreground">{selectedOrder.agent.user.phone}</p>
                         )}
@@ -1406,13 +1998,65 @@ const DashboardOrders = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8"
+                          className="h-8 text-xs font-semibold border-primary/20 hover:bg-primary/5 bg-background"
                           onClick={() => window.open(`tel:${selectedOrder.agent?.user.phone}`, '_self')}
                         >
                           Call Agent
                         </Button>
                       )}
                     </div>
+
+                    {selectedAgentPaymentProfile && (
+                      <div className="pt-2 border-t border-border/30 space-y-2">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Direct Payment Settling Info</p>
+                        
+                        {selectedAgentPaymentProfile.mobileMoneyNumbers && selectedAgentPaymentProfile.mobileMoneyNumbers.length > 0 && (
+                          <div className="space-y-1 bg-background/50 p-2 rounded-lg border border-border/40 text-xs">
+                            <p className="font-bold text-muted-foreground text-[10px]">Mobile Money Accounts</p>
+                            {selectedAgentPaymentProfile.mobileMoneyNumbers.map((m: any, idx: number) => (
+                              <div key={idx} className="flex justify-between items-center py-0.5">
+                                <span className="font-medium text-foreground">{m.provider} ({m.name})</span>
+                                <span className="font-mono font-bold">{m.phone}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {selectedAgentPaymentProfile.lipaNumbers && selectedAgentPaymentProfile.lipaNumbers.length > 0 && (
+                          <div className="space-y-1 bg-background/50 p-2 rounded-lg border border-border/40 text-xs">
+                            <p className="font-bold text-muted-foreground text-[10px]">Lipa Number / Paybill</p>
+                            {selectedAgentPaymentProfile.lipaNumbers.map((l: any, idx: number) => (
+                              <div key={idx} className="flex justify-between items-center py-0.5">
+                                <span className="font-medium text-foreground">{l.provider} ({l.name})</span>
+                                <span className="font-mono font-bold">{l.number}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {selectedAgentPaymentProfile.bankAccounts && selectedAgentPaymentProfile.bankAccounts.length > 0 && (
+                          <div className="space-y-1 bg-background/50 p-2 rounded-lg border border-border/40 text-xs">
+                            <p className="font-bold text-muted-foreground text-[10px]">Bank Accounts</p>
+                            {selectedAgentPaymentProfile.bankAccounts.map((b: any, idx: number) => (
+                              <div key={idx} className="flex flex-col py-1 border-b border-border/20 last:border-0 text-left">
+                                <div className="flex justify-between items-center">
+                                  <span className="font-semibold">{b.bankName}</span>
+                                  <span className="font-mono font-bold">{b.accountNumber}</span>
+                                </div>
+                                <span className="text-[10px] text-muted-foreground">Name: {b.accountName}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between text-xs py-1 px-1">
+                          <span className="text-muted-foreground">Cash Collection Available:</span>
+                          <span className={`font-bold ${selectedAgentPaymentProfile.cashCollectionAvailable ? "text-emerald-600" : "text-red-500"}`}>
+                            {selectedAgentPaymentProfile.cashCollectionAvailable ? "Yes" : "No"}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1436,13 +2080,126 @@ const DashboardOrders = () => {
                   </Button>
                 )}
 
-                {isCustomer && selectedOrder.paymentStatus === "PENDING" && (
+                {isCustomer && selectedOrder.paymentStatus === "AWAITING_PAYMENT" && (
                   <Button
                     variant="hero"
                     className="w-full"
                     onClick={() => openPaymentModal(selectedOrder)}
                   >
                     Pay Now
+                  </Button>
+                )}
+
+                {/* Review System (Customer only) */}
+                {isCustomer && ["DELIVERED_SUCCESSFULLY", "COMPLETED"].includes(selectedOrder.status) && (
+                  <div className="p-4 bg-card border border-border rounded-xl space-y-3">
+                    <h4 className="text-sm font-bold text-foreground text-left">Customer Review & Feedback</h4>
+                    {selectedOrder.review ? (
+                      <div className="space-y-2 text-xs text-left">
+                        <div className="flex justify-between items-center py-1">
+                          <span className="font-medium text-muted-foreground">Overall Rating</span>
+                          <div className="flex gap-1 items-center">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            <span className="font-bold">{selectedOrder.review.overallScore?.toFixed(1)} / 5</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
+                          <div>Communication: {selectedOrder.review.communication}/5</div>
+                          <div>Speed: {selectedOrder.review.deliverySpeed}/5</div>
+                          <div>Professionalism: {selectedOrder.review.professionalism}/5</div>
+                          <div>Quality: {selectedOrder.review.productQuality}/5</div>
+                        </div>
+                        {selectedOrder.review.comment && (
+                          <p className="bg-muted/40 p-2 rounded-lg border border-border/50 text-muted-foreground italic mt-2">
+                            "{selectedOrder.review.comment}"
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2 text-left">
+                        <p className="text-xs text-muted-foreground">You have not reviewed this completed order yet. Rate the agent's service quality:</p>
+                        {isReviewFormOpen ? (
+                          <form onSubmit={handleSubmitReview} className="space-y-3 pt-2">
+                            <StarRating value={ratings.communication} onChange={(val) => setRatings({ ...ratings, communication: val })} label="Communication" />
+                            <StarRating value={ratings.deliverySpeed} onChange={(val) => setRatings({ ...ratings, deliverySpeed: val })} label="Delivery Speed" />
+                            <StarRating value={ratings.professionalism} onChange={(val) => setRatings({ ...ratings, professionalism: val })} label="Professionalism" />
+                            <StarRating value={ratings.productQuality} onChange={(val) => setRatings({ ...ratings, productQuality: val })} label="Product Quality" />
+                            
+                            <div className="space-y-1.5 pt-1">
+                              <label className="text-xs font-semibold text-foreground">Optional Comment</label>
+                              <Input
+                                placeholder="Write a brief comment about the service..."
+                                value={reviewComment}
+                                onChange={(e) => setReviewComment(e.target.value)}
+                                className="text-xs"
+                              />
+                            </div>
+                            <div className="flex gap-2 justify-end pt-1">
+                              <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setIsReviewFormOpen(false)}>
+                                Cancel
+                              </Button>
+                              <Button type="submit" variant="hero" size="sm" className="h-8 text-xs" disabled={submittingReview}>
+                                Submit Review
+                              </Button>
+                            </div>
+                          </form>
+                        ) : (
+                          <Button variant="outline" size="sm" className="w-full text-xs font-semibold" onClick={() => setIsReviewFormOpen(true)}>
+                            Rate Sourcing Agent
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Dispute & Complaint history */}
+                {selectedOrder.complaints && selectedOrder.complaints.length > 0 && (
+                  <div className="p-4 bg-destructive/5 border border-destructive/10 rounded-xl space-y-2 text-left">
+                    <h4 className="text-xs font-bold text-destructive uppercase tracking-wider flex items-center gap-1.5">
+                      <ShieldAlert className="w-4 h-4 text-destructive" />
+                      Disputes History
+                    </h4>
+                    <div className="space-y-2 max-h-36 overflow-y-auto">
+                      {selectedOrder.complaints.map((c: any) => (
+                        <div key={c.id} className="text-xs bg-background/50 p-2 rounded border border-destructive/10 space-y-1">
+                          <div className="flex justify-between items-center font-bold">
+                            <span className="text-foreground">{c.category.replace('_', ' ')}</span>
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
+                              c.status === 'RESOLVED' 
+                                ? 'bg-green-100 text-green-800' 
+                                : c.status === 'DISMISSED'
+                                  ? 'bg-slate-100 text-slate-800'
+                                  : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {c.status}
+                            </span>
+                          </div>
+                          <p className="text-muted-foreground text-[11px]">{c.description}</p>
+                          {c.adminNotes && (
+                            <p className="text-[10px] text-primary italic bg-primary/5 p-1 rounded mt-1">
+                              Admin Notes: {c.adminNotes}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Dispute payment button (Customer only) */}
+                {isCustomer && selectedOrder.paymentStatus !== "CONFIRMED" && selectedOrder.paymentStatus !== "DISPUTED" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-destructive/20 text-destructive hover:bg-destructive/5"
+                    onClick={() => {
+                      setDisputeReason("");
+                      setIsDisputeOpen(true);
+                    }}
+                  >
+                    <ShieldAlert className="w-4 h-4 mr-2" />
+                    Dispute Payment / Report Issue
                   </Button>
                 )}
 
@@ -1481,7 +2238,7 @@ const DashboardOrders = () => {
           }}
         >
           <DialogHeader>
-            <DialogTitle>Pay via Mobile Money</DialogTitle>
+            <DialogTitle>Complete Payment</DialogTitle>
             {stkState !== "loading" && stkState !== "pending" && (
               <DialogDescription>
                 Order #{selectedOrder?.orderNumber} — Amount: <span className="font-bold text-foreground">TZS {(selectedOrder?.actualCost || 0).toLocaleString()}</span>
@@ -1490,6 +2247,33 @@ const DashboardOrders = () => {
           </DialogHeader>
 
           {stkState === "idle" && (
+            <div className="flex bg-muted/60 p-1 rounded-xl border border-border/40 mb-2">
+              <button
+                type="button"
+                onClick={() => setPaymentMethodTab("stk")}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  paymentMethodTab === "stk"
+                    ? "bg-background shadow-sm text-foreground font-bold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Instant STK Push
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethodTab("receipt")}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  paymentMethodTab === "receipt"
+                    ? "bg-background shadow-sm text-foreground font-bold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Manual Transfer / Receipt
+              </button>
+            </div>
+          )}
+
+          {stkState === "idle" && paymentMethodTab === "stk" && (
             <div className="space-y-4">
               {/* Payment provider logos */}
               <div>
@@ -1539,6 +2323,118 @@ const DashboardOrders = () => {
               >
                 <CreditCard className="w-4 h-4 mr-2" />
                 Send STK Push — TZS {(selectedOrder?.actualCost || 0).toLocaleString()}
+              </Button>
+            </div>
+          )}
+
+          {stkState === "idle" && paymentMethodTab === "receipt" && (
+            <div className="space-y-4 text-left">
+              {/* Settling info */}
+              <div className="space-y-3">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Direct Payment Settling Info</p>
+                
+                {selectedAgentPaymentProfile ? (
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {/* Mobile Money Accounts */}
+                    {selectedAgentPaymentProfile.mobileMoneyNumbers && selectedAgentPaymentProfile.mobileMoneyNumbers.length > 0 && (
+                      <div className="space-y-1.5 bg-muted/30 p-2.5 rounded-xl border border-border/40 text-xs">
+                        <p className="font-bold text-muted-foreground text-[10px] uppercase">Mobile Money Accounts</p>
+                        {selectedAgentPaymentProfile.mobileMoneyNumbers.map((m: any, idx: number) => (
+                          <div key={idx} className="flex justify-between items-center py-0.5 border-b border-border/10 last:border-0">
+                            <span className="font-semibold text-foreground">{m.provider} ({m.name})</span>
+                            <span className="font-mono font-bold text-primary">{m.phone}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Lipa / Paybill */}
+                    {selectedAgentPaymentProfile.lipaNumbers && selectedAgentPaymentProfile.lipaNumbers.length > 0 && (
+                      <div className="space-y-1.5 bg-muted/30 p-2.5 rounded-xl border border-border/40 text-xs">
+                        <p className="font-bold text-muted-foreground text-[10px] uppercase">Lipa Number / Paybill</p>
+                        {selectedAgentPaymentProfile.lipaNumbers.map((l: any, idx: number) => (
+                          <div key={idx} className="flex justify-between items-center py-0.5 border-b border-border/10 last:border-0">
+                            <span className="font-semibold text-foreground">{l.provider} ({l.name})</span>
+                            <span className="font-mono font-bold text-primary">{l.number}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Bank Accounts */}
+                    {selectedAgentPaymentProfile.bankAccounts && selectedAgentPaymentProfile.bankAccounts.length > 0 && (
+                      <div className="space-y-1.5 bg-muted/30 p-2.5 rounded-xl border border-border/40 text-xs">
+                        <p className="font-bold text-muted-foreground text-[10px] uppercase">Bank Accounts</p>
+                        {selectedAgentPaymentProfile.bankAccounts.map((b: any, idx: number) => (
+                          <div key={idx} className="flex flex-col py-1 border-b border-border/10 last:border-0">
+                            <div className="flex justify-between items-center">
+                              <span className="font-semibold">{b.bankName}</span>
+                              <span className="font-mono font-bold text-primary">{b.accountNumber}</span>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground">Name: {b.accountName}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedAgentPaymentProfile.cashCollectionAvailable && (
+                      <div className="flex items-center justify-between text-xs py-1 px-1 bg-green-500/5 text-green-600 rounded-lg p-2 border border-green-500/10">
+                        <span className="font-semibold">Cash Collection Available</span>
+                        <span className="font-bold">Yes</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">No payment settling options configured by the agent yet. Please contact the agent or administrator.</p>
+                )}
+              </div>
+
+              {/* Upload area */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Upload Payment Receipt</label>
+                <div className="border-2 border-dashed border-border/60 hover:border-primary/50 transition-colors rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer bg-muted/10 relative">
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setReceiptFile(e.target.files[0]);
+                      }
+                    }}
+                  />
+                  <ImageIcon className="w-8 h-8 text-muted-foreground mb-2" />
+                  {receiptFile ? (
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-foreground truncate max-w-[280px]">{receiptFile.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{(receiptFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold">Click to select or drag receipt image/PDF</p>
+                      <p className="text-[10px] text-muted-foreground">Supports JPG, PNG, WEBP, or PDF</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Button
+                variant="hero"
+                className="w-full"
+                onClick={handleUploadReceipt}
+                disabled={isUploadingReceipt || !receiptFile}
+              >
+                {isUploadingReceipt ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading Receipt…
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Submit Receipt for Verification
+                  </>
+                )}
               </Button>
             </div>
           )}
@@ -1651,6 +2547,38 @@ const DashboardOrders = () => {
               Record payment details for Order #{selectedOrder?.orderNumber}
             </DialogDescription>
           </DialogHeader>
+
+          {selectedOrder?.paymentReceiptUrl && (
+            <div className="bg-muted/40 p-3 rounded-xl border border-border/50 text-xs space-y-2 text-left my-2">
+              <p className="font-bold text-muted-foreground uppercase tracking-wide text-[10px]">Uploaded Receipt Proof</p>
+              <div className="flex flex-col items-center gap-2">
+                {selectedOrder.paymentReceiptUrl.toLowerCase().endsWith(".pdf") ? (
+                  <a
+                    href={getImageUrl(selectedOrder.paymentReceiptUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-background border border-border/80 rounded-lg text-primary font-semibold hover:bg-muted/50 transition-colors w-full justify-center"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    View Receipt PDF
+                  </a>
+                ) : (
+                  <div className="relative group overflow-hidden rounded-lg border border-border bg-background w-full flex justify-center p-1">
+                    <img
+                      src={getImageUrl(selectedOrder.paymentReceiptUrl)}
+                      alt="Payment Receipt"
+                      className="max-h-40 w-auto object-cover cursor-zoom-in rounded-lg"
+                      onClick={() => window.open(getImageUrl(selectedOrder.paymentReceiptUrl), "_blank")}
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
+                      <span className="text-[10px] text-white font-semibold">Click to Zoom</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleConfirmPaymentSubmit} className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Payment Method</label>
@@ -1707,6 +2635,171 @@ const DashboardOrders = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Assign Driver Dialog */}
+      <Dialog open={isAssignDriverOpen} onOpenChange={setIsAssignDriverOpen}>
+        <DialogContent className="max-w-md bg-white">
+          <DialogHeader>
+            <DialogTitle>Assign Independent Driver</DialogTitle>
+            <DialogDescription>
+              Enter the driver and route details. This will update the order status and notify the driver.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAssignDriver} className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground">Driver Full Name *</label>
+              <Input
+                placeholder="e.g. Athumani Juma"
+                value={driverName}
+                onChange={(e) => setDriverName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground">Driver Phone Number *</label>
+              <Input
+                placeholder="e.g. +255765432101"
+                value={driverPhone}
+                onChange={(e) => setDriverPhone(e.target.value)}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-foreground">Vehicle Type *</label>
+                <select
+                  value={vehicleType}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  className="w-full h-10 border border-input rounded-md px-3 bg-white text-sm"
+                >
+                  <option value="Motorcycle">Motorcycle</option>
+                  <option value="Bajaji">Bajaji</option>
+                  <option value="Car">Car</option>
+                  <option value="Truck">Truck</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-foreground">Vehicle Plate Number *</label>
+                <Input
+                  placeholder="e.g. T 123 ABC"
+                  value={vehiclePlateNumber}
+                  onChange={(e) => setVehiclePlateNumber(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground">Pickup Location *</label>
+              <Input
+                value={driverPickup}
+                onChange={(e) => setDriverPickup(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground">Delivery Location *</label>
+              <Input
+                value={driverDelivery}
+                onChange={(e) => setDriverDelivery(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground">Notes / Instructions</label>
+              <textarea
+                placeholder="e.g. Handle with care, call customer on arrival"
+                value={driverNotes}
+                onChange={(e) => setDriverNotes(e.target.value)}
+                className="w-full min-h-[60px] border border-input rounded-md p-2 text-sm"
+              />
+            </div>
+            <Button type="submit" disabled={isAssigningDriver} className="w-full bg-[#00966d] hover:bg-[#007d5b] text-white">
+              {isAssigningDriver ? "Assigning..." : "Assign & Notify"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+      {/* Verification Code Dialog */}
+      <Dialog open={isVerifyingDeliveryOpen} onOpenChange={setIsVerifyingDeliveryOpen}>
+        <DialogContent className="max-w-sm bg-white">
+          <DialogHeader>
+            <DialogTitle>Confirm Delivery Verification</DialogTitle>
+            <DialogDescription>
+              Ask the customer for their 6-digit verification code to complete the delivery.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleVerifyDeliverySubmit} className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground">Verification Code *</label>
+              <Input
+                type="text"
+                maxLength={6}
+                placeholder="Enter 6-digit code"
+                value={deliveryVerificationCode}
+                onChange={(e) => setDeliveryVerificationCode(e.target.value.replace(/\D/g, ''))}
+                required
+                className="text-center font-mono text-xl tracking-widest h-12"
+              />
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <Button type="button" variant="ghost" onClick={() => setIsVerifyingDeliveryOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="hero">
+                Confirm Code
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dispute Payment Dialog */}
+      <Dialog open={isDisputeOpen} onOpenChange={setIsDisputeOpen}>
+        <DialogContent className="max-w-md bg-white">
+          <DialogHeader>
+            <DialogTitle>File a Dispute / Report Issue</DialogTitle>
+            <DialogDescription>
+              Describe the issue. The payment status will be marked as DISPUTED, and a complaint will be filed to the Super Admin.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmitDispute} className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground">Issue Category *</label>
+              <Select value={disputeCategory} onValueChange={setDisputeCategory}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="WRONG_PRODUCT">Wrong Product</SelectItem>
+                  <SelectItem value="MISSING_PRODUCT">Missing Product</SelectItem>
+                  <SelectItem value="DAMAGED_PRODUCT">Damaged Product</SelectItem>
+                  <SelectItem value="FRAUDULENT_ACTIVITY">Fraudulent Activity</SelectItem>
+                  <SelectItem value="DELIVERY_ISSUES">Delivery Issues</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground">Dispute Explanation *</label>
+              <textarea
+                className="w-full rounded-xl border border-border p-3 text-xs bg-background focus:outline-none focus:ring-1 focus:ring-primary h-28 resize-none text-left"
+                placeholder="Explain the reason for disputing this payment..."
+                value={disputeReason}
+                onChange={(e) => setDisputeReason(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <Button type="button" variant="ghost" onClick={() => setIsDisputeOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="hero" className="bg-destructive hover:bg-destructive/90 text-white" disabled={submittingDispute}>
+                File Dispute
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {activeChatId && (
         <ChatWindow
           chatId={activeChatId}

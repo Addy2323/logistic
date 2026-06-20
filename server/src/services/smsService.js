@@ -7,18 +7,28 @@ const prisma = new PrismaClient();
  * Provides SMS notification capabilities for MHEMA Express Logistics
  */
 
-// Configuration from environment
-const SMS_CONFIG = {
-    provider: process.env.SMS_PROVIDER || 'beem', // 'beem' or 'briq'
-    apiKey: process.env.SMS_API_KEY || '',
-    secretKey: process.env.SMS_SECRET || '', // Only used for Beem
-    senderId: process.env.SMS_SENDER_ID || 'Rodway Shop',
-    enabled: process.env.SMS_ENABLED !== 'false',
-    urls: {
-        beem: 'https://apisms.beem.africa/v1/send',
-        briq: 'https://karibu.briq.tz/v1/message/send-instant'
+// Configuration from environment - evaluated dynamically to prevent import hoisting race conditions
+const SMS_CONFIG = new Proxy({}, {
+    get(target, prop) {
+        const urls = {
+            beem: 'https://apisms.beem.africa/v1/send',
+            briq: 'https://karibu.briq.tz/v1/message/send-instant',
+            meseji: process.env.MESEJI_API_URL || 'https://meseji.co.tz/api/v1/sms/send'
+        };
+        
+        if (prop === 'urls') return urls;
+        
+        const config = {
+            provider: process.env.SMS_PROVIDER || 'beem', // 'beem', 'briq', or 'meseji'
+            apiKey: process.env.MESEJI_API_KEY || process.env.SMS_API_KEY || '',
+            secretKey: process.env.SMS_SECRET || '', // Only used for Beem
+            senderId: process.env.MESEJI_SENDER_ID || process.env.SMS_SENDER_ID || 'Rodway Shop',
+            enabled: process.env.SMS_ENABLED !== 'false',
+            urls
+        };
+        return config[prop];
     }
-};
+});
 
 /**
  * Format phone number to international format (Tanzania)
@@ -160,6 +170,50 @@ async function sendBriqSms(phone, message) {
 }
 
 /**
+ * Send SMS using Meseji API
+ * @param {string} phone - Formatted phone number
+ * @param {string} message - Message content
+ */
+async function sendMesejiSms(phone, message) {
+    if (!SMS_CONFIG.apiKey) {
+        throw new Error('Meseji API Credentials not configured');
+    }
+
+    const payload = {
+        sender_id: SMS_CONFIG.senderId,
+        message: message,
+        contacts: phone
+    };
+
+    console.log(`[MESEJI] Sending SMS to ${phone}, sender: ${SMS_CONFIG.senderId}`);
+
+    const response = await fetch(SMS_CONFIG.urls.meseji, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': SMS_CONFIG.apiKey
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const text = await response.text();
+    console.log(`[MESEJI] HTTP ${response.status} - Response: ${text}`);
+
+    let result;
+    try {
+        result = JSON.parse(text);
+    } catch (e) {
+        throw new Error(`Meseji returned non-JSON: ${text.substring(0, 200)}`);
+    }
+
+    if (response.ok && (result.status === 'queued' || result.status === 'success' || result.batch_id)) {
+        return { success: true, messageId: result.batch_id || 'meseji-ok' };
+    } else {
+        throw new Error(result.message || result.error || `HTTP ${response.status}`);
+    }
+}
+
+/**
  * Send SMS to a single recipient
  * @param {string} phoneNumber - Recipient phone number
  * @param {string} message - SMS content
@@ -185,6 +239,8 @@ async function sendSms(phoneNumber, message) {
         let result;
         if (SMS_CONFIG.provider === 'briq') {
             result = await sendBriqSms(formattedPhone, message);
+        } else if (SMS_CONFIG.provider === 'meseji') {
+            result = await sendMesejiSms(formattedPhone, message);
         } else {
             result = await sendBeemSms(formattedPhone, message);
         }
@@ -300,7 +356,7 @@ async function getSmsLogs(options = {}) {
 
 // Service status check
 function isConfigured() {
-    if (SMS_CONFIG.provider === 'briq') {
+    if (SMS_CONFIG.provider === 'briq' || SMS_CONFIG.provider === 'meseji') {
         return !!SMS_CONFIG.apiKey;
     }
     return !!(SMS_CONFIG.apiKey && SMS_CONFIG.secretKey);

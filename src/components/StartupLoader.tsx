@@ -33,14 +33,14 @@ const StartupLoader = () => {
 
                 <div className="flex flex-col items-center gap-2">
                     <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-foreground tracking-tight">MHEMA</span>
-                        <span className="text-2xl font-bold text-secondary tracking-tight">EXPRESS</span>
+                        <span className="text-2xl font-bold text-foreground tracking-tight">LotusRise</span>
+                        <span className="text-2xl font-bold text-secondary tracking-tight">Logistics</span>
                     </div>
                     <div className="h-1 w-48 bg-muted rounded-full overflow-hidden relative">
                         <div className="absolute inset-0 bg-accent-gradient animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
                     </div>
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-[0.2em] animate-fade-in" style={{ animationDelay: "0.5s" }}>
-                        Logistics Co. Ltd
+                        Co. Ltd
                     </span>
                 </div>
             </div>

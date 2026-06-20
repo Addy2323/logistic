@@ -13,7 +13,9 @@ import {
   ClipboardList,
   BarChart3,
   ChevronLeft,
-  MessageSquare
+  MessageSquare,
+  AlertTriangle,
+  MapPin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -63,6 +65,24 @@ const DashboardSidebar = () => {
     },
     {
       icon: CreditCard,
+      label: "Subscriptions",
+      path: "/dashboard/subscriptions",
+      roles: ["ADMIN", "AGENT"]
+    },
+    {
+      icon: AlertTriangle,
+      label: "Complaints & Disputes",
+      path: "/dashboard/complaints",
+      roles: ["ADMIN", "AGENT", "CUSTOMER"]
+    },
+    {
+      icon: MapPin,
+      label: "Saved Addresses",
+      path: "/dashboard/addresses",
+      roles: ["CUSTOMER"]
+    },
+    {
+      icon: CreditCard,
       label: t("dashboard.sidebar.payments"),
       path: "/dashboard/payments",
       roles: ["ADMIN"]
@@ -78,6 +98,12 @@ const DashboardSidebar = () => {
       label: "SMS Broadcast",
       path: "/dashboard/sms",
       roles: ["ADMIN"]
+    },
+    {
+      icon: Package,
+      label: "Product Catalog",
+      path: "/dashboard/products",
+      roles: ["ADMIN", "AGENT"]
     },
   ];
 
@@ -99,11 +125,11 @@ const DashboardSidebar = () => {
       <div className="p-4 border-b border-border flex items-center justify-between">
         <a href="/" className={cn("flex items-center gap-3", collapsed && "justify-center")}>
           <div className="w-10 h-10 rounded-full bg-white border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
-            <img src="/logo.png" alt="MHEMA EXPRESS Logo" className="w-full h-full object-contain" />
+            <img src="/logo.png" alt="LotusRise Logistics Logo" className="w-full h-full object-contain" />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-bold text-foreground leading-tight">MHEMA EXPRESS</span>
+              <span className="text-sm font-bold text-foreground leading-tight">LotusRise Logistics</span>
               <span className="text-xs text-muted-foreground">{t("dashboard.sidebar.title")}</span>
             </div>
           )}

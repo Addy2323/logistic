@@ -154,7 +154,7 @@ router.post('/', authenticateToken, authorize('ADMIN'), async (req, res) => {
         }
 
         // Check if email already exists
-        const existingUser = await prisma.user.findUnique({
+        const existingUser = await prisma.user.findFirst({
             where: { email }
         });
 

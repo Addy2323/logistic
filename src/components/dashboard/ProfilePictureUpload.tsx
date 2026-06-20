@@ -1,11 +1,10 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { usersAPI } from '@/lib/api';
+import { usersAPI, getImageUrl } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { API_HOST } from '@/config/api';
 
 const ProfilePictureUpload = () => {
     const { user, updateProfile } = useAuth();
@@ -74,7 +73,7 @@ const ProfilePictureUpload = () => {
             .substring(0, 2);
     };
 
-    const avatarSrc = user?.avatarUrl ? user.avatarUrl.replace('/uploads/', '/api/uploads/') : undefined;
+    const avatarSrc = getImageUrl(user?.avatarUrl);
 
     return (
         <div className="relative group">

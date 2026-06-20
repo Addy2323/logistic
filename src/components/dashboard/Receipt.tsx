@@ -160,13 +160,13 @@ const Receipt: React.FC<ReceiptProps> = ({ order, onClose, autoDownload = false 
             <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-8 mb-12 border-b-2 border-slate-100 pb-10">
                 <div className="text-center sm:text-left space-y-2">
                     <div className="h-20 w-20 mx-auto sm:mx-0 mb-4 rounded-md overflow-hidden border-2 border-slate-100 shadow-sm flex items-center justify-center bg-white">
-                        <img src="/logo.png" alt="Mhema Express" className="h-full w-full object-cover" />
+                        <img src="/logo.png" alt="LotusRise Logistics" className="h-full w-full object-cover" />
                     </div>
-                    <div className="text-sm font-bold text-emerald-700 uppercase tracking-widest">{fixSpacing("MHEMA EXPRESS LOGISTICS")}</div>
+                    <div className="text-sm font-bold text-emerald-700 uppercase tracking-widest">{fixSpacing("LOTUSRISE LOGISTICS CO. LTD")}</div>
                     <div className="text-xs text-slate-500 max-w-[250px]">
                         {fixSpacing("Kariakoo, Dar es Salaam, Tanzania")}<br />
-                        +255&nbsp;700&nbsp;000&nbsp;000 | info@mhemaexpress.com<br />
-                        www.mhemaexpress.com
+                        +255&nbsp;700&nbsp;000&nbsp;000 | info@lotusriselogistics.com<br />
+                        www.lotusriselogistics.com
                     </div>
                 </div>
                 <div className="text-center sm:text-right space-y-1">
@@ -197,7 +197,7 @@ const Receipt: React.FC<ReceiptProps> = ({ order, onClose, autoDownload = false 
                     </div>
                     <div>
                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{fixSpacing("Sender Details")}</h4>
-                        <p className="font-bold text-slate-800">{fixSpacing("MHEMA EXPRESS LOGISTICS")}</p>
+                        <p className="font-bold text-slate-800">{fixSpacing("LOTUSRISE LOGISTICS CO. LTD")}</p>
                         <p className="text-sm text-slate-500">{fixSpacing("Kariakoo, Dar es Salaam")}</p>
                         <p className="text-sm text-slate-500">+255&nbsp;700&nbsp;000&nbsp;000</p>
                     </div>
@@ -241,7 +241,7 @@ const Receipt: React.FC<ReceiptProps> = ({ order, onClose, autoDownload = false 
                                     <td className="p-4 text-center text-slate-600 font-medium">
                                         {fixSpacing(format(new Date(order.completedAt || order.updatedAt || new Date()), "MMM d, yyyy"))}
                                     </td>
-                                    <td className="p-4 text-right font-bold text-secondary">{fixSpacing(order.agent?.user?.fullName || "Mhema Agent")}</td>
+                                    <td className="p-4 text-right font-bold text-secondary">{fixSpacing(order.agent?.user?.fullName || "LotusRise Agent")}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -330,9 +330,9 @@ const Receipt: React.FC<ReceiptProps> = ({ order, onClose, autoDownload = false 
 
             {/* Footer */}
             <div className="mt-20 pt-8 border-t border-slate-100 text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">{fixSpacing("THANK YOU FOR CHOOSING MHEMA EXPRESS LOGISTICS")}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">{fixSpacing("THANK YOU FOR CHOOSING LOTUSRISE LOGISTICS")}</p>
                 <div className="flex justify-center gap-6 items-center">
-                    <a href="https://mhemaexpress.com" className="text-xs font-bold text-secondary hover:underline">mhemaexpress.com</a>
+                    <a href="https://lotusriselogistics.com" className="text-xs font-bold text-secondary hover:underline">lotusriselogistics.com</a>
                     <span className="text-slate-200">|</span>
                     <span className="text-xs font-bold text-slate-400">{fixSpacing("Trusted Delivery Partner")}</span>
                 </div>

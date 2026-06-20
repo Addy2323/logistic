@@ -27,7 +27,7 @@ const Dashboard = () => {
   return (
     <>
       <Helmet>
-        <title>Dashboard | MHEMA EXPRESS</title>
+        <title>Dashboard | LotusRise Logistics</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <div className="min-h-screen bg-background flex">
@@ -60,7 +60,7 @@ const Dashboard = () => {
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <span className="font-bold text-foreground">MHEMA EXPRESS</span>
+              <span className="font-bold text-foreground">LotusRise Logistics</span>
             </div>
 
             <div className="flex items-center gap-2">

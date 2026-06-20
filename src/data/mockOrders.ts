@@ -1,4 +1,4 @@
-export type OrderStatus = "pending" | "placed" | "queued" | "verified" | "approved" | "assigned" | "collecting" | "packing" | "picked" | "in_transit" | "dispatched" | "delivered" | "completed" | "cancelled";
+export type OrderStatus = "pending" | "placed" | "queued" | "verified" | "approved" | "assigned" | "collecting" | "packing" | "picked" | "in_transit" | "dispatched" | "delivered" | "completed" | "cancelled" | "request_submitted" | "agent_assigned" | "product_sourcing" | "product_purchased" | "product_packed" | "ready_for_delivery" | "driver_assigned" | "out_for_delivery" | "driver_arrived" | "delivered_successfully";
 export type PaymentStatus = "pending" | "paid" | "failed";
 
 export interface OrderHistory {

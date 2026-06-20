@@ -14,9 +14,9 @@ const NotFound = () => {
   return (
     <>
       <Helmet>
-        <title>Page Not Found | MHEMA EXPRESS</title>
+        <title>Page Not Found | LotusRise Logistics</title>
         <meta name="robots" content="noindex, follow" />
-        <meta name="description" content="The page you're looking for doesn't exist. Return to MHEMA EXPRESS homepage." />
+        <meta name="description" content="The page you're looking for doesn't exist. Return to LotusRise Logistics homepage." />
       </Helmet>
       <div className="flex min-h-screen items-center justify-center bg-muted">
         <div className="text-center">

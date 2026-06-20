@@ -56,19 +56,19 @@ router.post('/bulk', authenticateToken, authorize('ADMIN'), async (req, res) => 
             // Fetch phone numbers by target group
             if (targetGroup === 'agents') {
                 const agents = await prisma.user.findMany({
-                    where: { role: 'AGENT', phone: { not: null } },
+                    where: { role: 'AGENT', phone: { not: "" } },
                     select: { phone: true }
                 });
                 phoneNumbers = agents.map(a => a.phone).filter(Boolean);
             } else if (targetGroup === 'customers') {
                 const customers = await prisma.user.findMany({
-                    where: { role: 'CUSTOMER', phone: { not: null } },
+                    where: { role: 'CUSTOMER', phone: { not: "" } },
                     select: { phone: true }
                 });
                 phoneNumbers = customers.map(c => c.phone).filter(Boolean);
             } else if (targetGroup === 'all') {
                 const users = await prisma.user.findMany({
-                    where: { phone: { not: null } },
+                    where: { phone: { not: "" } },
                     select: { phone: true }
                 });
                 phoneNumbers = users.map(u => u.phone).filter(Boolean);

@@ -10,6 +10,7 @@ import { ChatProvider } from "@/contexts/ChatContext";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Auth from "./pages/Auth";
+import AdminLogin from "./pages/AdminLogin";
 import Dashboard from "./pages/Dashboard";
 import DashboardOverview from "./pages/dashboard/DashboardOverview";
 import DashboardOrders from "./pages/dashboard/DashboardOrders";
@@ -21,6 +22,12 @@ import DashboardPaymentSettings from "./pages/dashboard/DashboardPaymentSettings
 import DashboardTransportSettings from "./pages/dashboard/DashboardTransportSettings";
 import DashboardSettings from "./pages/dashboard/DashboardSettings";
 import DashboardSMS from "./pages/dashboard/DashboardSMS";
+import DashboardProducts from "./pages/dashboard/DashboardProducts";
+import DashboardSubscriptions from "./pages/dashboard/DashboardSubscriptions";
+import DashboardSavedAddresses from "./pages/dashboard/DashboardSavedAddresses";
+import DashboardComplaints from "./pages/dashboard/DashboardComplaints";
+import AgentPublicProfile from "./pages/AgentPublicProfile";
+import AgentsDirectory from "./pages/AgentsDirectory";
 import NotFound from "./pages/NotFound";
 import StartupLoader from "./components/StartupLoader";
 import { useState, useEffect } from "react";
@@ -37,6 +44,10 @@ const App = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  if (isLoading) {
+    return <StartupLoader />;
+  }
+
   return (
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
@@ -44,7 +55,6 @@ const App = () => {
           <NotificationProvider>
             <ChatProvider>
               <TooltipProvider>
-                {isLoading && <StartupLoader />}
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
@@ -52,6 +62,9 @@ const App = () => {
                     <Route path="/" element={<Index />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route path="/agent/:id" element={<AgentPublicProfile />} />
+                    <Route path="/agents" element={<AgentsDirectory />} />
                     <Route path="/dashboard" element={<Dashboard />}>
                       <Route index element={<DashboardOverview />} />
                       <Route path="orders" element={<DashboardOrders />} />
@@ -63,6 +76,10 @@ const App = () => {
                       <Route path="payments" element={<DashboardPaymentSettings />} />
                       <Route path="transport" element={<DashboardTransportSettings />} />
                       <Route path="sms" element={<DashboardSMS />} />
+                      <Route path="products" element={<DashboardProducts />} />
+                      <Route path="subscriptions" element={<DashboardSubscriptions />} />
+                      <Route path="addresses" element={<DashboardSavedAddresses />} />
+                      <Route path="complaints" element={<DashboardComplaints />} />
                     </Route>
                     <Route path="*" element={<NotFound />} />
                   </Routes>

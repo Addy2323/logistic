@@ -94,14 +94,17 @@ apiClient.interceptors.response.use(
 
 // Auth API
 export const authAPI = {
-    login: (email: string, password: string) =>
-        apiClient.post('/auth/login', { email, password }),
+    login: (phone: string) =>
+        apiClient.post('/auth/login', { phone }),
 
-    register: (fullName: string, email: string, password: string, phone?: string) =>
-        apiClient.post('/auth/register', { fullName, email, password, phone }),
+    verifyOtp: (phone: string, otpCode: string) =>
+        apiClient.post('/auth/verify-otp', { phone, otpCode }),
 
-    verifyOtp: (userId: string, otpCode: string) =>
-        apiClient.post('/auth/verify-otp', { userId, otpCode }),
+    resendOtp: (phone: string) =>
+        apiClient.post('/auth/resend-otp', { phone }),
+
+    adminLogin: (email: string, password: string) =>
+        apiClient.post('/auth/admin/login', { email, password }),
 };
 
 // Orders API
@@ -127,8 +130,22 @@ export const ordersAPI = {
     }) =>
         apiClient.post('/orders', orderData),
 
-    updateStatus: (id: string, status: string) =>
-        apiClient.patch(`/orders/${id}/status`, { status }),
+    updateStatus: (id: string, status: string, verificationCode?: string) =>
+        apiClient.patch(`/orders/${id}/status`, { status, verificationCode }),
+
+    disputePayment: (id: string, reason: string, category?: string) =>
+        apiClient.patch(`/orders/${id}/dispute-payment`, { reason, category }),
+
+    assignDriver: (id: string, driverData: {
+        driverName: string;
+        driverPhone: string;
+        vehicleType: string;
+        vehiclePlateNumber: string;
+        pickupLocation: string;
+        deliveryLocation: string;
+        notes?: string;
+    }) =>
+        apiClient.post(`/orders/${id}/assign-driver`, driverData),
 
     update: (id: string, data: {
         actualCost?: number;
@@ -146,6 +163,11 @@ export const ordersAPI = {
 
     uploadProductImage: (formData: FormData) =>
         apiClient.post('/orders/upload-image', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+
+    uploadReceipt: (id: string, formData: FormData) =>
+        apiClient.post(`/orders/${id}/upload-receipt`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         }),
 
@@ -170,6 +192,15 @@ export const agentsAPI = {
     list: (params?: { search?: string; status?: string }) =>
         apiClient.get('/agents', { params }),
 
+    getPublicList: (params?: { search?: string; region?: string; level?: string }) =>
+        apiClient.get('/agents/public', { params }),
+
+    getPublicProfile: (id: string) =>
+        apiClient.get(`/agents/public/${id}`),
+
+    toggleFollow: (id: string) =>
+        apiClient.post(`/agents/${id}/follow`),
+
     getStats: (id: string) =>
         apiClient.get(`/agents/${id}/stats`),
 
@@ -190,11 +221,30 @@ export const agentsAPI = {
         commissionRate?: number;
         maxOrderCapacity?: number;
         status?: string;
+        boutiqueLevel?: string;
     }) =>
         apiClient.patch(`/agents/${id}`, data),
 
     delete: (id: string) =>
         apiClient.delete(`/agents/${id}`),
+
+    getLeaderboard: (params?: { period?: string }) =>
+        apiClient.get('/agents/leaderboard', { params }),
+
+    getPaymentProfile: () =>
+        apiClient.get('/agents/payment-profile'),
+
+    getAgentPaymentProfile: (agentId: string) =>
+        apiClient.get(`/agents/payment-profile/${agentId}`),
+
+    savePaymentProfile: (data: {
+        mobileMoneyNumbers?: any;
+        bankAccounts?: any;
+        lipaNumbers?: any;
+        qrCodeUrls?: any;
+        cashCollectionAvailable?: boolean;
+    }) =>
+        apiClient.post('/agents/payment-profile', data),
 };
 
 // Customers API
@@ -250,6 +300,43 @@ export const transportAPI = {
         apiClient.delete(`/transport-methods/${id}`),
 };
 
+// Products API
+export const productsAPI = {
+    listPublic: (params?: { agentId?: string; limit?: number; search?: string }) =>
+        apiClient.get('/products/public', { params }),
+
+    list: () =>
+        apiClient.get('/products'),
+
+    create: (data: {
+        name: string;
+        price: number;
+        description?: string;
+        imageUrl?: string;
+        sourceLink?: string;
+        agentId?: string;
+    }) =>
+        apiClient.post('/products', data),
+
+    delete: (id: string) =>
+        apiClient.delete(`/products/${id}`),
+
+    getPublicBySlug: (slug: string) =>
+        apiClient.get(`/products/slug/${slug}`),
+
+    getById: (id: string) =>
+        apiClient.get(`/products/${id}`),
+
+    trackView: (slug: string) =>
+        apiClient.post(`/products/${slug}/view`),
+
+    trackClick: (slug: string) =>
+        apiClient.post(`/products/${slug}/click`),
+
+    trackConversion: (slug: string) =>
+        apiClient.post(`/products/${slug}/conversion`),
+};
+
 // Notifications API
 export const notificationsAPI = {
     list: (params?: { isRead?: boolean; limit?: number }) =>
@@ -276,6 +363,9 @@ export const analyticsAPI = {
 
     getAgentPerformance: () =>
         apiClient.get('/analytics/agents'),
+
+    getExtendedAdmin: () =>
+        apiClient.get('/analytics/admin-extended'),
 };
 
 // Chats API
@@ -289,8 +379,99 @@ export const usersAPI = {
         apiClient.patch<ApiResponse<any>>('/users/profile', data),
     uploadAvatar: (formData: FormData) =>
         apiClient.post<ApiResponse<any>>('/users/avatar', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+            headers: { 'Content-Type': undefined as any }
         })
+};
+
+// Subscriptions API
+export const subscriptionsAPI = {
+    list: () =>
+        apiClient.get('/subscriptions'),
+
+    getPackages: () =>
+        apiClient.get('/subscriptions/packages'),
+
+    updatePackage: (key: string, data: { name?: string; price?: number; benefits?: string[] }) =>
+        apiClient.patch(`/subscriptions/packages/${key}`, data),
+
+    initiateSTKPush: (data: { plan: string; phone: string }) =>
+        apiClient.post('/subscriptions/stk-push', data),
+
+    checkSTKStatus: (reference: string) =>
+        apiClient.get(`/subscriptions/stk-status?reference=${reference}`),
+
+    create: (data: {
+        agentId: string;
+        plan: 'WEEKLY' | 'MONTHLY' | 'SEMI_ANNUAL' | 'ANNUAL';
+        amount: number;
+        startDate?: string;
+        endDate: string;
+        status?: 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
+    }) =>
+        apiClient.post('/subscriptions', data),
+
+    update: (id: string, data: {
+        status?: 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
+        endDate?: string;
+        plan?: 'WEEKLY' | 'MONTHLY' | 'SEMI_ANNUAL' | 'ANNUAL';
+        amount?: number;
+    }) =>
+        apiClient.patch(`/subscriptions/${id}`, data),
+
+    delete: (id: string) =>
+        apiClient.delete(`/subscriptions/${id}`),
+};
+
+// Saved Addresses API
+export const addressesAPI = {
+    list: () =>
+        apiClient.get('/addresses'),
+    create: (data: {
+        name: string;
+        type: 'HOME' | 'OFFICE' | 'SHOP' | 'WAREHOUSE' | 'OTHER';
+        address: string;
+        lat: number;
+        lng: number;
+        street?: string;
+        ward?: string;
+        district?: string;
+        region?: string;
+        country?: string;
+    }) =>
+        apiClient.post('/addresses', data),
+    delete: (id: string) =>
+        apiClient.delete(`/addresses/${id}`),
+};
+
+// Complaints API
+export const complaintsAPI = {
+    list: () =>
+        apiClient.get('/complaints'),
+    create: (data: {
+        orderId: string;
+        category: 'WRONG_PRODUCT' | 'MISSING_PRODUCT' | 'DAMAGED_PRODUCT' | 'FRAUDULENT_ACTIVITY' | 'DELIVERY_ISSUES';
+        description: string;
+        evidenceImages?: string[];
+    }) =>
+        apiClient.post('/complaints', data),
+    resolve: (id: string, data: { status: 'RESOLVED' | 'DISMISSED'; adminNotes?: string }) =>
+        apiClient.patch(`/complaints/${id}/resolve`, data),
+};
+
+// Reviews API
+export const reviewsAPI = {
+    list: () =>
+        apiClient.get('/reviews'),
+    submit: (data: {
+        orderId: string;
+        communication: number;
+        deliverySpeed: number;
+        professionalism: number;
+        productQuality: number;
+        comment?: string;
+        images?: string[];
+    }) =>
+        apiClient.post('/reviews', data),
 };
 
 export default apiClient;

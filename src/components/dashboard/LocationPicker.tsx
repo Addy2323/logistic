@@ -50,11 +50,22 @@ const isWithinBounds = (lat: number, lng: number, restrictToKariakoo: boolean = 
 const MapController = ({ center, zoom }: { center: [number, number]; zoom?: number }) => {
     const map = useMap();
     useEffect(() => {
+        // Invalidate map size to fix grey areas and offset clicking inside modals
+        const timer = setTimeout(() => {
+            map.invalidateSize();
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [map]);
+
+    useEffect(() => {
         if (center) {
             map.flyTo(center, zoom || map.getZoom(), {
                 duration: 1.5,
                 easeLinearity: 0.25
             });
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 300);
         }
     }, [center, zoom, map]);
     return null;
@@ -211,7 +222,11 @@ const LocationPicker = ({ onLocationSelect, initialLocation, restrictToKariakoo 
                     onLocationSelect(latitude, longitude, `${latitude}, ${longitude}`);
                 }
 
-                toast.success(`Location updated! (Accuracy: ±${Math.round(pos.coords.accuracy)}m)`);
+                if (pos.coords.accuracy > 1000) {
+                    toast.info(`Network IP location estimated (accuracy: ±${Math.round(pos.coords.accuracy / 1000)}km). For exact results, please use mobile GPS or search/drag pin manually.`);
+                } else {
+                    toast.success(`Location updated! (Accuracy: ±${Math.round(pos.coords.accuracy)}m)`);
+                }
                 setIsLocating(false);
             },
             (error) => {

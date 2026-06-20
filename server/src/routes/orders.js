@@ -48,6 +48,36 @@ const upload = multer({
     }
 });
 
+// Configure multer for payment receipts
+const receiptStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = join(__dirname, '../../uploads/receipts');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'receipt-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const uploadReceipt = multer({
+    storage: receiptStorage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+        const filetypes = /jpeg|jpg|png|webp|pdf/;
+        const mimetype = filetypes.test(file.mimetype) || file.mimetype === 'application/pdf';
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error('Only image files (jpg, jpeg, png, webp) and PDFs are allowed!'));
+    }
+});
+
 // Get all orders (with filters based on role)
 router.get('/', authenticateToken, async (req, res) => {
     try {
@@ -115,11 +145,18 @@ router.get('/:id', authenticateToken, async (req, res) => {
                 },
                 agent: {
                     include: {
-                        user: { select: { fullName: true, phone: true } }
+                        user: { select: { fullName: true, phone: true } },
+                        verifications: {
+                            where: { status: 'APPROVED' },
+                            orderBy: { createdAt: 'desc' },
+                            take: 1
+                        }
                     }
                 },
                 transportMethod: true,
-                salesRecord: true
+                salesRecord: true,
+                review: true,
+                complaints: true
             }
         });
 
@@ -157,6 +194,68 @@ router.post('/upload-image', authenticateToken, upload.array('productImages', 5)
     }
 });
 
+// Upload payment receipt (Customer only)
+// POST /api/orders/:id/upload-receipt
+router.post('/:id/upload-receipt', authenticateToken, uploadReceipt.single('receipt'), async (req, res) => {
+    try {
+        const order = await prisma.order.findUnique({
+            where: { id: req.params.id }
+        });
+
+        if (!order) {
+            return res.status(404).json({ error: { message: 'Order not found' } });
+        }
+
+        if (order.customerId !== req.user.id) {
+            return res.status(403).json({ error: { message: 'Access denied' } });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: { message: 'No file uploaded' } });
+        }
+
+        const receiptUrl = `/uploads/receipts/${req.file.filename}`;
+
+        // Update order status to PENDING and save the receipt url
+        const updatedOrder = await prisma.order.update({
+            where: { id: order.id },
+            data: {
+                paymentStatus: 'PENDING',
+                paymentReceiptUrl: receiptUrl
+            }
+        });
+
+        // Create notification for the agent if assigned
+        if (order.agentId) {
+            const agent = await prisma.agent.findUnique({
+                where: { id: order.agentId }
+            });
+            if (agent) {
+                await prisma.notification.create({
+                    data: {
+                        userId: agent.userId,
+                        type: 'PAYMENT_CONFIRMED',
+                        title: 'Payment Receipt Uploaded',
+                        message: `Customer uploaded a payment receipt for order #${order.orderNumber}. Please verify the receipt and confirm the payment.`,
+                        relatedOrderId: order.id
+                    }
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            data: {
+                paymentReceiptUrl: receiptUrl,
+                paymentStatus: updatedOrder.paymentStatus
+            }
+        });
+    } catch (error) {
+        console.error('Upload receipt error:', error);
+        res.status(500).json({ error: { message: error.message || 'Failed to upload receipt' } });
+    }
+});
+
 // Create new order
 router.post('/', authenticateToken, async (req, res) => {
     try {
@@ -172,7 +271,9 @@ router.post('/', authenticateToken, async (req, res) => {
             packageWeight,
             productImageUrls,
             orderType,
-            productPrice
+            productPrice,
+            agentId,
+            productId
         } = req.body;
 
         // Sanitize transportMethodId: convert empty string to null
@@ -200,13 +301,37 @@ router.post('/', authenticateToken, async (req, res) => {
         }
 
         // Order type-specific validation
-        // Type A: Logistics only, no product price needed
-        // Type B: Product price required from customer
-        // Type C: Product price set by agent later after sourcing
         if (orderType === 'TYPE_B') {
             if (!productPrice || isNaN(parseFloat(productPrice)) || parseFloat(productPrice) <= 0) {
                 return res.status(400).json({
                     error: { message: 'Product price is required for Type B orders' }
+                });
+            }
+        }
+
+        // Check selected agent if any
+        let selectedAgent = null;
+        if (agentId) {
+            selectedAgent = await prisma.agent.findUnique({
+                where: { id: agentId },
+                include: {
+                    user: true,
+                    subscriptions: {
+                        where: {
+                            status: 'ACTIVE',
+                            endDate: { gte: new Date() }
+                        }
+                    }
+                }
+            });
+            if (!selectedAgent) {
+                return res.status(400).json({
+                    error: { message: 'The selected sourcing agent does not exist' }
+                });
+            }
+            if (selectedAgent.subscriptions.length === 0) {
+                return res.status(400).json({
+                    error: { message: 'The selected agent does not have an active subscription and cannot accept orders.' }
                 });
             }
         }
@@ -216,11 +341,11 @@ router.post('/', authenticateToken, async (req, res) => {
 
         // Generate order number
         const orderNumber = `ORD-${Date.now()}-${uuidv4().substring(0, 4).toUpperCase()}`;
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
         // Admin can create order on behalf of customer
         let finalCustomerId = req.user.id;
         if (req.user.role === 'ADMIN' && req.body.customerId) {
-            // Verify if the customer exists
             const targetCustomer = await prisma.user.findUnique({
                 where: { id: req.body.customerId, role: 'CUSTOMER' }
             });
@@ -251,7 +376,10 @@ router.post('/', authenticateToken, async (req, res) => {
                 estimatedCost,
                 productPrice: (productPrice !== undefined && productPrice !== null && !isNaN(productPrice)) ? parseFloat(productPrice) : null,
                 productImageUrls: Array.isArray(productImageUrls) ? productImageUrls : (productImageUrls ? [productImageUrls] : []),
-                status: 'PLACED'
+                verificationCode,
+                productId: productId || null,
+                agentId: selectedAgent ? selectedAgent.id : null,
+                status: selectedAgent ? 'AGENT_ASSIGNED' : 'REQUEST_SUBMITTED'
             },
             include: {
                 customer: {
@@ -261,15 +389,44 @@ router.post('/', authenticateToken, async (req, res) => {
             }
         });
 
+        // Automatically assign order to agent or use pre-selected agent
+        let assignment = { agentId: selectedAgent ? selectedAgent.id : null, agentUserId: selectedAgent ? selectedAgent.userId : null, queued: false };
+        try {
+            if (selectedAgent) {
+                // Pre-selected agent chat initialization
+                await createOrderChat(order.id, finalCustomerId, selectedAgent.userId);
+
+                // Notifications
+                await prisma.notification.create({
+                    data: {
+                        userId: selectedAgent.userId,
+                        type: 'ORDER_ASSIGNED',
+                        title: 'New Sourcing Order Assigned',
+                        message: `Customer ${order.customer.fullName} selected you for order #${orderNumber}`,
+                        relatedOrderId: order.id
+                    }
+                });
+
+                if (selectedAgent.user.phone) {
+                    const smsMessage = `New Sourcing Order Assigned\nOrder ID: ${orderNumber}\nPickup: ${pickupAddress}\nDelivery: ${deliveryAddress}\nPlease login to LotusRise.`;
+                    await smsService.sendSms(selectedAgent.user.phone, smsMessage);
+                }
+            } else {
+                // Auto-assignment queue
+                assignment = await orderDistribution.assignOrder(order.id);
+                await createOrderChat(order.id, finalCustomerId, assignment?.agentUserId);
+            }
+        } catch (assignError) {
+            console.error('Order assignment/chat failed, but order was created:', assignError);
+        }
+
         // Check for high-value order (> 1,000,000 TZS)
         if (order.estimatedCost > 1000000) {
-            // Find all admins
             const admins = await prisma.user.findMany({
                 where: { role: 'ADMIN' },
                 select: { id: true }
             });
 
-            // Create notifications for admins
             const notificationData = admins.map(admin => ({
                 userId: admin.id,
                 type: 'ADMIN_ALERT',
@@ -278,7 +435,6 @@ router.post('/', authenticateToken, async (req, res) => {
                 relatedOrderId: order.id
             }));
 
-            // Also notify the assigned agent if any
             if (assignment?.agentUserId) {
                 notificationData.push({
                     userId: assignment.agentUserId,
@@ -294,16 +450,6 @@ router.post('/', authenticateToken, async (req, res) => {
                     data: notificationData
                 });
             }
-        }
-
-        // Automatically assign order to agent and create chat
-        let assignment = { agentId: null, agentUserId: null, queued: false };
-        try {
-            assignment = await orderDistribution.assignOrder(order.id);
-            await createOrderChat(order.id, req.user.id, assignment?.agentUserId);
-        } catch (assignError) {
-            console.error('Order assignment/chat failed, but order was created:', assignError);
-            // We continue as the order is already created in the database
         }
 
         // Fetch updated order with agent info
@@ -340,7 +486,19 @@ router.post('/', authenticateToken, async (req, res) => {
 router.patch('/:id/status', authenticateToken, authorize('AGENT', 'ADMIN'), async (req, res) => {
     try {
         const { status } = req.body;
-        const validStatuses = ['PLACED', 'QUEUED', 'ASSIGNED', 'PICKED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED', 'CANCELLED'];
+        const validStatuses = [
+            'REQUEST_SUBMITTED',
+            'AGENT_ASSIGNED',
+            'PRODUCT_SOURCING',
+            'PRODUCT_PURCHASED',
+            'PRODUCT_PACKED',
+            'READY_FOR_DELIVERY',
+            'DRIVER_ASSIGNED',
+            'OUT_FOR_DELIVERY',
+            'DRIVER_ARRIVED',
+            'DELIVERED_SUCCESSFULLY',
+            'CANCELLED'
+        ];
 
         console.log(`[Order Status Update] Order ID: ${req.params.id}, New Status: ${status}, User: ${req.user.email} (${req.user.role})`);
 
@@ -365,19 +523,27 @@ router.patch('/:id/status', authenticateToken, authorize('AGENT', 'ADMIN'), asyn
             return res.status(403).json({ error: { message: 'Access denied' } });
         }
 
+        // Check verification code if updating to DELIVERED_SUCCESSFULLY
+        if (status === 'DELIVERED_SUCCESSFULLY') {
+            const { verificationCode: reqCode } = req.body;
+            if (order.verificationCode) {
+                if (!reqCode) {
+                    return res.status(400).json({ error: { message: 'Customer delivery verification code is required to complete delivery' } });
+                }
+                if (order.verificationCode !== String(reqCode).trim()) {
+                    return res.status(400).json({ error: { message: 'Invalid delivery verification code. Please request the correct code from the customer.' } });
+                }
+            }
+        }
+
         // Update with timestamp
         const updateData = { status };
         const now = new Date();
 
-        if (status === 'ASSIGNED') {
+        if (status === 'AGENT_ASSIGNED') {
             updateData.assignedAt = now;
-        } else if (status === 'PICKED') {
-            updateData.pickedAt = now;
-        } else if (status === 'IN_TRANSIT') {
-            // No specific timestamp for in_transit in schema, but we could add one if needed
-        } else if (status === 'DELIVERED') {
+        } else if (status === 'DELIVERED_SUCCESSFULLY') {
             updateData.deliveredAt = now;
-        } else if (status === 'COMPLETED') {
             updateData.completedAt = now;
         }
 
@@ -391,22 +557,22 @@ router.patch('/:id/status', authenticateToken, authorize('AGENT', 'ADMIN'), asyn
         });
 
         // Handle agent stats and accounting for final statuses
-        if (['COMPLETED', 'CANCELLED'].includes(status) && !['COMPLETED', 'CANCELLED'].includes(order.status)) {
+        if (['DELIVERED_SUCCESSFULLY', 'CANCELLED'].includes(status) && !['DELIVERED_SUCCESSFULLY', 'CANCELLED'].includes(order.status)) {
             if (order.agentId) {
                 await prisma.agent.update({
                     where: { id: order.agentId },
                     data: { currentOrderCount: { decrement: 1 } }
                 });
 
-                // If COMPLETED, also update totalDeliveries and handle accounting if needed
-                if (status === 'COMPLETED') {
+                // If DELIVERED_SUCCESSFULLY, also update totalDeliveries and handle accounting if needed
+                if (status === 'DELIVERED_SUCCESSFULLY') {
                     await prisma.agent.update({
                         where: { id: order.agentId },
                         data: { totalDeliveries: { increment: 1 } }
                     });
 
                     // If payment not confirmed and we have actualCost, perform accounting
-                    if (order.paymentStatus === 'PENDING' && (order.actualCost || updateData.actualCost)) {
+                    if (order.paymentStatus === 'AWAITING_PAYMENT' && (order.actualCost || updateData.actualCost)) {
                         const finalAmount = updateData.actualCost || parseFloat(order.actualCost.toString());
                         const commissionRate = parseFloat(order.agent?.commissionRate || 10);
                         const agentCommission = finalAmount * (commissionRate / 100);
@@ -442,7 +608,7 @@ router.patch('/:id/status', authenticateToken, authorize('AGENT', 'ADMIN'), asyn
                     }
                 }
             }
-        } else if (!['COMPLETED', 'CANCELLED'].includes(status) && ['COMPLETED', 'CANCELLED'].includes(order.status)) {
+        } else if (!['DELIVERED_SUCCESSFULLY', 'CANCELLED'].includes(status) && ['DELIVERED_SUCCESSFULLY', 'CANCELLED'].includes(order.status)) {
             // Moving back from final to active status
             if (order.agentId) {
                 await prisma.agent.update({
@@ -450,7 +616,7 @@ router.patch('/:id/status', authenticateToken, authorize('AGENT', 'ADMIN'), asyn
                     data: { currentOrderCount: { increment: 1 } }
                 });
 
-                if (order.status === 'COMPLETED') {
+                if (order.status === 'DELIVERED_SUCCESSFULLY') {
                     await prisma.agent.update({
                         where: { id: order.agentId },
                         data: { totalDeliveries: { decrement: 1 } }
@@ -471,12 +637,11 @@ router.patch('/:id/status', authenticateToken, authorize('AGENT', 'ADMIN'), asyn
         });
 
         // Send SMS to customer when order is completed
-        if (status === 'COMPLETED') {
+        if (status === 'DELIVERED_SUCCESSFULLY') {
             try {
                 await smsService.sendOrderCompletionSms(updatedOrder.customer, order);
             } catch (smsError) {
                 console.error('SMS notification failed (non-blocking):', smsError.message);
-                // Don't throw - SMS failure shouldn't block order completion
             }
         }
 
@@ -567,6 +732,56 @@ router.patch('/:id', authenticateToken, authorize('AGENT', 'ADMIN'), async (req,
     } catch (error) {
         console.error('Update order error:', error);
         res.status(500).json({ error: { message: 'Failed to update order' } });
+    }
+});
+
+// Dispute payment (Customer only)
+router.patch('/:id/dispute-payment', authenticateToken, async (req, res) => {
+    try {
+        const { reason, category } = req.body;
+        if (!reason) {
+            return res.status(400).json({ error: { message: 'Reason for dispute is required' } });
+        }
+
+        const order = await prisma.order.findUnique({
+            where: { id: req.params.id }
+        });
+
+        if (!order) {
+            return res.status(404).json({ error: { message: 'Order not found' } });
+        }
+
+        if (order.customerId !== req.user.id) {
+            return res.status(403).json({ error: { message: 'Access denied' } });
+        }
+
+        const updatedOrder = await prisma.order.update({
+            where: { id: req.params.id },
+            data: {
+                paymentStatus: 'DISPUTED'
+            },
+            include: {
+                customer: { select: { fullName: true, phone: true } },
+                agent: { include: { user: { select: { fullName: true } } } },
+                transportMethod: true
+            }
+        });
+
+        await prisma.complaint.create({
+            data: {
+                orderId: order.id,
+                customerId: req.user.id,
+                agentId: order.agentId,
+                category: category || 'DELIVERY_ISSUES',
+                description: `Payment marked as DISPUTED by customer. Reason: ${reason}`,
+                status: 'PENDING'
+            }
+        });
+
+        res.json({ success: true, data: updatedOrder });
+    } catch (error) {
+        console.error('Dispute payment error:', error);
+        res.status(500).json({ error: { message: 'Failed to dispute payment' } });
     }
 });
 
@@ -902,7 +1117,7 @@ router.get('/:id/stk-status', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('STK status check error:', error);
         // Return pending on error so frontend keeps polling
-        res.json({ success: true, data: { status: 'pending', paymentStatus: 'PENDING' } });
+        res.json({ success: true, data: { status: 'pending', paymentStatus: 'AWAITING_PAYMENT' } });
     }
 });
 
@@ -1115,6 +1330,171 @@ router.delete('/:id', authenticateToken, authorize('ADMIN'), async (req, res) =>
     } catch (error) {
         console.error('Delete order error:', error);
         res.status(500).json({ error: { message: 'Failed to delete order' } });
+    }
+});
+
+/**
+ * Assign driver to order (Agent/Admin only)
+ * POST /api/orders/:id/assign-driver
+ */
+router.post('/:id/assign-driver', authenticateToken, authorize('AGENT', 'ADMIN'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            driverName,
+            driverPhone,
+            vehicleType,
+            vehiclePlateNumber,
+            pickupLocation,
+            deliveryLocation,
+            notes
+        } = req.body;
+
+        // Validation
+        if (!driverName || !driverPhone || !vehicleType || !vehiclePlateNumber || !pickupLocation || !deliveryLocation) {
+            return res.status(400).json({ error: { message: 'All driver and location fields are required' } });
+        }
+
+        // Fetch the order
+        const order = await prisma.order.findUnique({
+            where: { id },
+            include: {
+                customer: true,
+                agent: {
+                    include: {
+                        user: true
+                    }
+                }
+            }
+        });
+
+        if (!order) {
+            return res.status(404).json({ error: { message: 'Order not found' } });
+        }
+
+        // Access check
+        if (req.user.role === 'AGENT') {
+            const agent = await prisma.agent.findUnique({
+                where: { userId: req.user.id }
+            });
+            if (!agent || order.agentId !== agent.id) {
+                return res.status(403).json({ error: { message: 'Access denied: You are not assigned to this order' } });
+            }
+        }
+
+        // Generate delivery verification code if not already set
+        const verificationCode = order.verificationCode || Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Start transaction
+        const result = await prisma.$transaction(async (tx) => {
+            // 1. Create Driver Assignment history
+            const assignment = await tx.driverAssignment.create({
+                data: {
+                    orderId: order.id,
+                    driverName,
+                    driverPhone,
+                    vehicleType,
+                    vehiclePlateNumber,
+                    pickupLocation,
+                    deliveryLocation,
+                    notes
+                }
+            });
+
+            // 2. Update order status and verification code
+            const updatedOrder = await tx.order.update({
+                where: { id: order.id },
+                data: {
+                    status: 'DRIVER_ASSIGNED',
+                    verificationCode
+                }
+            });
+
+            // 3. Create notification for the customer
+            await tx.notification.create({
+                data: {
+                    userId: order.customerId,
+                    type: 'STATUS_UPDATE',
+                    title: 'Driver Assigned',
+                    message: `Driver ${driverName} (${vehiclePlateNumber}) has been assigned to your order #${order.orderNumber}.`,
+                    relatedOrderId: order.id
+                }
+            });
+
+            return { assignment, updatedOrder };
+        });
+
+        // Fetch templates for notifications
+        const smsTemplate = await prisma.notificationTemplate.findUnique({
+            where: { key: 'driver_assignment_sms' }
+        });
+        const waTemplate = await prisma.notificationTemplate.findUnique({
+            where: { key: 'driver_assignment_whatsapp' }
+        });
+
+        const agentPhone = order.agent?.user?.phone || req.user.phone || '';
+        const lat = order.deliveryLat ? order.deliveryLat.toString() : '-6.819';
+        const lng = order.deliveryLng ? order.deliveryLng.toString() : '39.274';
+
+        const templateData = {
+            driverName,
+            orderNumber: order.orderNumber,
+            customerName: order.customer.fullName || 'Customer',
+            customerPhone: order.customer.phone,
+            pickupLocation,
+            deliveryLocation,
+            agentPhone,
+            latitude: lat,
+            longitude: lng,
+            notes: notes || 'No special instructions.'
+        };
+
+        // Format templates helper
+        const formatTemplate = (tmpl, data) => {
+            let formatted = tmpl;
+            for (const key in data) {
+                formatted = formatted.replace(new RegExp(`{${key}}`, 'g'), data[key]);
+            }
+            return formatted;
+        };
+
+        const smsContent = smsTemplate 
+            ? formatTemplate(smsTemplate.content, templateData)
+            : `Hello ${driverName}, you have been assigned to order ${order.orderNumber}. Pickup: ${pickupLocation}, Delivery: ${deliveryLocation}.`;
+
+        const waContent = waTemplate
+            ? formatTemplate(waTemplate.content, templateData)
+            : `Hello *${driverName}*, you have been assigned order *${order.orderNumber}*. Pickup: ${pickupLocation}, Delivery: ${deliveryLocation}.`;
+
+        // Log formatted messages to console as requested
+        console.log('\n================================================================');
+        console.log(`📱 DRIVER ASSIGNED NOTIFICATIONS FOR ORDER #${order.orderNumber}`);
+        console.log(`Driver: ${driverName} (${driverPhone})`);
+        console.log('----------------------------------------------------------------');
+        console.log('[SMS OUTBOX TEMPLATE]:');
+        console.log(smsContent);
+        console.log('----------------------------------------------------------------');
+        console.log('[WHATSAPP OUTBOX TEMPLATE]:');
+        console.log(waContent);
+        console.log('================================================================\n');
+
+        // Trigger SMS notification to the driver
+        const smsResult = await smsService.sendSms(driverPhone, smsContent);
+        console.log(`[SMS SEND RESULT]:`, smsResult);
+
+        res.json({
+            success: true,
+            data: {
+                orderId: result.updatedOrder.id,
+                status: result.updatedOrder.status,
+                verificationCode: result.updatedOrder.verificationCode,
+                assignment: result.assignment,
+                smsResult
+            }
+        });
+    } catch (error) {
+        console.error('Assign driver error:', error);
+        res.status(500).json({ error: { message: 'Failed to assign driver: ' + error.message } });
     }
 });
 

@@ -23,10 +23,10 @@ class OrderDistributionService {
                 // No agents available - add to queue
                 await this.addToQueue(orderId);
 
-                // Update order status to QUEUED
+                // Update order status to REQUEST_SUBMITTED
                 await prisma.order.update({
                     where: { id: orderId },
-                    data: { status: 'QUEUED' }
+                    data: { status: 'REQUEST_SUBMITTED' }
                 });
 
                 console.log(`Order ${orderId} queued - no agents available`);
@@ -80,15 +80,24 @@ class OrderDistributionService {
                 }
             },
             include: {
-                user: true
+                user: true,
+                subscriptions: {
+                    where: {
+                        status: 'ACTIVE',
+                        endDate: { gte: new Date() }
+                    }
+                }
             },
             orderBy: {
                 createdAt: 'asc' // Consistent ordering for round-robin
             }
         });
 
-        // Filter agents under capacity
-        return agents.filter(agent => agent.currentOrderCount < agent.maxOrderCapacity);
+        // Filter agents under capacity who have active subscriptions
+        return agents.filter(agent => 
+            agent.currentOrderCount < agent.maxOrderCapacity && 
+            agent.subscriptions.length > 0
+        );
     }
 
     /**
@@ -150,7 +159,7 @@ class OrderDistributionService {
             where: { id: orderId },
             data: {
                 agentId,
-                status: 'ASSIGNED',
+                status: 'AGENT_ASSIGNED',
                 assignedAt: now
             }
         });
@@ -266,7 +275,7 @@ class OrderDistributionService {
                 where: {
                     agentId,
                     status: {
-                        in: ['ASSIGNED', 'PICKED', 'IN_TRANSIT']
+                        in: ['AGENT_ASSIGNED', 'PRODUCT_SOURCING', 'PRODUCT_PURCHASED', 'PRODUCT_PACKED', 'READY_FOR_DELIVERY']
                     }
                 }
             });
@@ -283,7 +292,7 @@ class OrderDistributionService {
                     where: { id: order.id },
                     data: {
                         agentId: null,
-                        status: 'PLACED'
+                        status: 'REQUEST_SUBMITTED'
                     }
                 });
 

@@ -92,8 +92,8 @@ const DashboardCustomers = () => {
     /**
      * Display phone number in readable format: +255 712 345 678
      */
-    const formatPhoneDisplay = (phone: string): string => {
-        if (!phone || phone === 'N/A') return phone;
+    const formatPhoneDisplay = (phone?: string): string => {
+        if (!phone || phone === 'N/A') return phone || 'N/A';
 
         // Ensure it starts with 255
         let formatted = phone.replace(/\D/g, '');
@@ -111,6 +111,17 @@ const DashboardCustomers = () => {
         }
 
         return phone;
+    };
+
+    const formatJoinedDate = (dateString?: string) => {
+        if (!dateString) return "N/A";
+        try {
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return "N/A";
+            return format(d, "MMM yyyy");
+        } catch (e) {
+            return "N/A";
+        }
     };
 
     /**
@@ -253,11 +264,15 @@ const DashboardCustomers = () => {
         setShowPassword(false);
     };
 
-    const filteredCustomers = customers.filter(customer =>
-        customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        customer.phone.includes(searchQuery)
-    );
+    const filteredCustomers = customers.filter(customer => {
+        const name = customer.name || "";
+        const email = customer.email || "";
+        const phone = customer.phone || "";
+
+        return name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            phone.includes(searchQuery);
+    });
 
     return (
         <div className="space-y-6">
@@ -353,7 +368,7 @@ const DashboardCustomers = () => {
                                 )}
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                     <Calendar className="w-4 h-4" />
-                                    <span>{t("dashboard.customers.joined")} {format(new Date(customer.joinedAt), "MMM yyyy")}</span>
+                                    <span>{t("dashboard.customers.joined")} {formatJoinedDate(customer.joinedAt)}</span>
                                 </div>
                             </div>
 

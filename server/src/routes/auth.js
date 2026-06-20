@@ -1,140 +1,193 @@
 import express from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import { otpRateLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Helper to generate a 6-digit OTP
-const generateOTP = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-};
+// ─── Helpers ───────────────────────────────────────────────────────
 
-// Register
-router.post('/register', async (req, res) => {
+/** Generate a random 6-digit OTP */
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+/** Format phone to 255XXXXXXXXX */
+function normalizePhone(phone) {
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) cleaned = '255' + cleaned.substring(1);
+    else if (cleaned.length === 9) cleaned = '255' + cleaned;
+    return cleaned;
+}
+
+// ─── POST /login ─────────────────────────────────────────────
+// Direct login if user exists, otherwise send OTP for signup
+router.post('/login', otpRateLimiter, async (req, res) => {
     try {
-        const { email, password, fullName, phone, role = 'CUSTOMER' } = req.body;
+        const { phone } = req.body;
 
-        // Validation
-        if (!email || !password || !fullName || !phone) {
+        if (!phone) {
             return res.status(400).json({
-                error: { message: 'Email, password, name, and phone are required' }
+                error: { message: 'Phone number is required' }
             });
         }
 
-        // Check if user exists
-        const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) {
+        const normalizedPhone = normalizePhone(phone);
+
+        // Validate format (Tanzania: 255 + 9 digits)
+        if (!/^255\d{9}$/.test(normalizedPhone)) {
             return res.status(400).json({
-                error: { message: 'Email already registered' }
+                error: { message: 'Invalid phone number format. Use 255XXXXXXXXX or 7XXXXXXXX' }
             });
         }
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // Find user by phone
+        let user = await prisma.user.findUnique({
+            where: { phone: normalizedPhone },
+            include: { agent: true },
+        });
 
-        // Generate OTP and expiration (10 minutes)
+        if (user) {
+            // ----- USER EXISTS: DIRECT LOGIN -----
+            if (user.status !== 'ACTIVE') {
+                return res.status(403).json({
+                    error: { message: 'Account is inactive or suspended' }
+                });
+            }
+
+            const token = jwt.sign(
+                { userId: user.id, role: user.role },
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+            );
+
+            console.log(`[AUTH] Direct login for existing user: ${user.id} (${normalizedPhone})`);
+            return res.json({
+                success: true,
+                action: 'login',
+                token,
+                user: {
+                    id: user.id,
+                    email: user.email || null,
+                    fullName: user.fullName || user.phone,
+                    role: user.role,
+                    phone: user.phone,
+                    avatarUrl: user.avatarUrl,
+                    agent: user.agent ? {
+                        id: user.agent.id,
+                        availabilityStatus: user.agent.availabilityStatus,
+                        currentOrderCount: user.agent.currentOrderCount,
+                        rating: user.agent.rating,
+                    } : null,
+                },
+            });
+        }
+
+        // ----- NEW USER: SEND OTP FOR SIGNUP -----
+        await prisma.otpCode.updateMany({
+            where: { phone: normalizedPhone, verified: false },
+            data: { verified: true } 
+        });
+
         const otpCode = generateOTP();
-        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-        // Create user
-        const user = await prisma.user.create({
+        await prisma.otpCode.create({
             data: {
-                email,
-                password: hashedPassword,
-                fullName,
-                phone,
-                role: role === 'CUSTOMER' ? 'CUSTOMER' : 'CUSTOMER', // Only customers can self-register
-                otpCode,
-                otpExpiresAt,
-                isPhoneVerified: false
+                phone: normalizedPhone,
+                code: otpCode,
+                expiresAt,
             }
         });
 
-        // Send OTP via SMS
         try {
-            console.log(`[REGISTER] Sending OTP ${otpCode} to phone: ${phone}`);
+            console.log(`[OTP] Sending OTP ${otpCode} to ${normalizedPhone}`);
             const smsService = (await import('../services/smsService.js')).default;
-            const smsResult = await smsService.sendSms(
-                phone,
-                `Your MHEMA Express verification code is: ${otpCode}. Valid for 10 minutes.`
+            await smsService.sendSms(
+                normalizedPhone,
+                `Your MHEMA Express verification code is: ${otpCode}. Valid for 5 minutes.`
             );
-            console.log(`[REGISTER] SMS result:`, JSON.stringify(smsResult));
         } catch (smsError) {
-            console.error('[REGISTER] Failed to send OTP SMS:', smsError.message || smsError);
+            console.error('[OTP] Failed to send SMS:', smsError.message || smsError);
         }
 
-        // Return requiresOtp flag and userId instead of token
-        res.status(201).json({
+        return res.json({
             success: true,
-            requiresOtp: true,
-            userId: user.id,
-            message: 'OTP sent to your phone'
+            action: 'require_otp',
+            phone: normalizedPhone,
+            message: 'OTP sent successfully for signup',
+            expiresIn: 300,
         });
+
     } catch (error) {
-        console.error('Register error:', error);
-        res.status(500).json({ error: { message: 'Registration failed' } });
+        console.error('Login error:', error);
+        res.status(500).json({ error: { message: 'Authentication failed' } });
     }
 });
 
-// Verify OTP
+// ─── POST /verify-otp ───────────────────────────────────────────
+// Validate OTP → auto-create user → generate JWT session
 router.post('/verify-otp', async (req, res) => {
     try {
-        const { userId, otpCode } = req.body;
+        const { phone, otpCode } = req.body;
 
-        if (!userId || !otpCode) {
+        if (!phone || !otpCode) {
             return res.status(400).json({
-                error: { message: 'User ID and OTP are required' }
+                error: { message: 'Phone number and OTP code are required' }
             });
         }
 
-        const user = await prisma.user.findUnique({ where: { id: userId } });
+        const normalizedPhone = normalizePhone(phone);
 
-        if (!user) {
-            return res.status(404).json({ error: { message: 'User not found' } });
-        }
-
-        if (user.isPhoneVerified) {
-            return res.status(400).json({ error: { message: 'Phone already verified' } });
-        }
-
-        if (user.otpCode !== otpCode) {
-            return res.status(400).json({ error: { message: 'Invalid OTP code' } });
-        }
-
-        if (user.otpExpiresAt && user.otpExpiresAt < new Date()) {
-            return res.status(400).json({ error: { message: 'OTP code expired' } });
-        }
-
-        // Verify phone and clear OTP
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: {
-                isPhoneVerified: true,
-                otpCode: null,
-                otpExpiresAt: null
-            }
+        const otpRecord = await prisma.otpCode.findFirst({
+            where: {
+                phone: normalizedPhone,
+                code: otpCode,
+                verified: false,
+                expiresAt: { gt: new Date() },
+            },
+            orderBy: { createdAt: 'desc' },
         });
 
-        // Generate token
+        if (!otpRecord) {
+            return res.status(400).json({
+                error: { message: 'Invalid or expired OTP code' }
+            });
+        }
+
+        await prisma.otpCode.update({
+            where: { id: otpRecord.id },
+            data: { verified: true },
+        });
+
+        // Auto-create new user
+        const user = await prisma.user.create({
+            data: {
+                phone: normalizedPhone,
+                isPhoneVerified: true,
+                role: 'CUSTOMER',
+            },
+            include: { agent: true },
+        });
+        console.log(`[AUTH] New user created via OTP signup: ${user.id} (${normalizedPhone})`);
+
         const token = jwt.sign(
-            { userId: updatedUser.id, role: updatedUser.role },
+            { userId: user.id, role: user.role },
             process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
+            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
         );
 
         res.json({
             success: true,
             token,
             user: {
-                id: updatedUser.id,
-                email: updatedUser.email,
-                fullName: updatedUser.fullName,
-                role: updatedUser.role,
-                phone: updatedUser.phone,
-                avatarUrl: updatedUser.avatarUrl
-            }
+                id: user.id,
+                email: user.email || null,
+                fullName: user.fullName || user.phone,
+                role: user.role,
+                phone: user.phone,
+                avatarUrl: user.avatarUrl,
+                agent: null,
+            },
         });
     } catch (error) {
         console.error('Verify OTP error:', error);
@@ -142,8 +195,67 @@ router.post('/verify-otp', async (req, res) => {
     }
 });
 
-// Login
-router.post('/login', async (req, res) => {
+// ─── POST /resend-otp ───────────────────────────────────────────
+router.post('/resend-otp', otpRateLimiter, async (req, res) => {
+    try {
+        const { phone } = req.body;
+
+        if (!phone) {
+            return res.status(400).json({
+                error: { message: 'Phone number is required' }
+            });
+        }
+
+        const normalizedPhone = normalizePhone(phone);
+
+        if (!/^255\d{9}$/.test(normalizedPhone)) {
+            return res.status(400).json({
+                error: { message: 'Invalid phone number format' }
+            });
+        }
+
+        await prisma.otpCode.updateMany({
+            where: { phone: normalizedPhone, verified: false },
+            data: { verified: true },
+        });
+
+        const otpCode = generateOTP();
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+        await prisma.otpCode.create({
+            data: {
+                phone: normalizedPhone,
+                code: otpCode,
+                expiresAt,
+            }
+        });
+
+        try {
+            console.log(`[OTP-RESEND] Sending OTP ${otpCode} to ${normalizedPhone}`);
+            const smsService = (await import('../services/smsService.js')).default;
+            await smsService.sendSms(
+                normalizedPhone,
+                `Your MHEMA Express verification code is: ${otpCode}. Valid for 5 minutes.`
+            );
+        } catch (smsError) {
+            console.error('[OTP-RESEND] Failed to send SMS:', smsError.message || smsError);
+        }
+
+        res.json({
+            success: true,
+            phone: normalizedPhone,
+            message: 'OTP resent successfully',
+            expiresIn: 300,
+        });
+    } catch (error) {
+        console.error('Resend OTP error:', error);
+        res.status(500).json({ error: { message: 'Failed to resend OTP' } });
+    }
+});
+
+// ─── POST /admin/login ──────────────────────────────────────────
+// Dedicated Email + Password login for ADMIN role only
+router.post('/admin/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -153,10 +265,9 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        // Find user
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.findFirst({
             where: { email },
-            include: { agent: true }
+            include: { agent: true },
         });
 
         if (!user) {
@@ -165,27 +276,33 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        // Check password
-        const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) {
-            return res.status(401).json({
-                error: { message: 'Invalid email or password' }
+        if (user.role !== 'ADMIN') {
+            return res.status(403).json({
+                error: { message: 'Access denied. Administrator privileges required.' }
             });
         }
 
-        // Check user status
         if (user.status !== 'ACTIVE') {
             return res.status(403).json({
                 error: { message: 'Account is inactive or suspended' }
             });
         }
 
-        // Generate token
+        const bcrypt = (await import('bcryptjs')).default;
+        const isValidPassword = await bcrypt.compare(password, user.password || '');
+        if (!isValidPassword) {
+            return res.status(401).json({
+                error: { message: 'Invalid email or password' }
+            });
+        }
+
         const token = jwt.sign(
             { userId: user.id, role: user.role },
             process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
+            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
         );
+
+        console.log(`[AUTH] Admin login successful: ${user.email}`);
 
         res.json({
             success: true,
@@ -193,22 +310,16 @@ router.post('/login', async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email,
-                fullName: user.fullName,
+                fullName: user.fullName || user.phone,
                 role: user.role,
                 phone: user.phone,
                 avatarUrl: user.avatarUrl,
-                agent: user.agent ? {
-
-                    id: user.agent.id,
-                    availabilityStatus: user.agent.availabilityStatus,
-                    currentOrderCount: user.agent.currentOrderCount,
-                    rating: user.agent.rating
-                } : null
-            }
+                agent: null,
+            },
         });
     } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: { message: 'Login failed' } });
+        console.error('Admin Login error:', error);
+        res.status(500).json({ error: { message: 'Authentication failed' } });
     }
 });
 

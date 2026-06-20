@@ -89,7 +89,7 @@
     },
     "whyUs": {
         "badge": "Why Choose Us",
-        "title": "The MHEMA",
+        "title": "The LotusRise",
         "titleGradient": "Advantage",
         "description": "We are redefining Kariakoo logistics with transparency, speed, and a zero-scam guarantee.",
         "stats": {
@@ -181,7 +181,7 @@
         "welcomeBack": "Welcome back",
         "createAccount": "Create an account",
         "loginDesc": "Enter your credentials to access your account",
-        "registerDesc": "Get started with MHEMA EXPRESS today",
+        "registerDesc": "Get started with LotusRise Logistics today",
         "fullName": "Full Name",
         "fullNamePlaceholder": "John Doe",
         "email": "Email Address",
@@ -203,7 +203,7 @@
             "loginSuccess": "Login successful",
             "loginFailed": "Login failed",
             "accountCreated": "Account created!",
-            "welcomeMhema": "Welcome to MHEMA EXPRESS",
+            "welcomeMhema": "Welcome to LotusRise Logistics",
             "regFailed": "Registration failed",
             "nameRequired": "Name required",
             "nameRequiredDesc": "Please enter your full name"

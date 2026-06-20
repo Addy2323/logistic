@@ -90,7 +90,7 @@
     "whyUs": {
         "badge": "Kwanini Sisi",
         "title": "Faida za",
-        "titleGradient": "MHEMA",
+        "titleGradient": "LotusRise",
         "description": "Tunabadilisha jinsi ya kufanya biashara Kariakoo kwa uwazi, haraka, na uhakika wa kutotapeliwa.",
         "stats": {
             "accuracy": "Usahihi wa Uthibitishaji",
@@ -181,7 +181,7 @@
         "welcomeBack": "Karibu tena",
         "createAccount": "Tengeneza akaunti",
         "loginDesc": "Ingiza taarifa zako kuingia kwenye akaunti",
-        "registerDesc": "Anza kutumia MHEMA EXPRESS leo",
+        "registerDesc": "Anza kutumia LotusRise Logistics leo",
         "fullName": "Jina Kamili",
         "fullNamePlaceholder": "Juma Juma",
         "email": "Barua Pepe",
@@ -203,7 +203,7 @@
             "loginSuccess": "Umeingia kikamilifu",
             "loginFailed": "Kuingia kumeshindikana",
             "accountCreated": "Akaunti imetengenezwa!",
-            "welcomeMhema": "Karibu MHEMA EXPRESS",
+            "welcomeMhema": "Karibu LotusRise Logistics",
             "regFailed": "Usajili umeshindikana",
             "nameRequired": "Jina linahitajika",
             "nameRequiredDesc": "Tafadhali ingiza jina lako kamili"
